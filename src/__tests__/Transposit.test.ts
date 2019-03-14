@@ -1,0 +1,230 @@
+/*
+ * Copyright 2018 Transposit Corporation. All Rights Reserved.
+ */
+
+import { Transposit, TRANSPOSIT_CONSUME_KEY_PREFIX } from "../Transposit";
+import DoneCallback = jest.DoneCallback;
+
+function createUnsignedJwt(claims: any): string {
+  const header: string = btoa(JSON.stringify({ alg: "none" }));
+  const body: string = btoa(JSON.stringify(claims));
+  return `${header}.${body}.`;
+}
+
+describe("Transposit", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const jplaceArbysClaims: any = Object.freeze({
+    iss: "https://api.transposit.com",
+    sub: "jplace@transposit.com",
+    exp: 1522255319,
+    iat: 1521650519,
+    publicToken: "thisisapublictoken",
+    repository: "jplace/arbys_beef",
+  });
+
+  function makeArbysTransposit(): Transposit {
+    return new Transposit("jplace", "arbys_beef");
+  }
+
+  describe("getGoogleLoginLocation", () => {
+    it("returns the correct location", () => {
+      const transposit: Transposit = new Transposit("jplace", "arbys_beef");
+
+      expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
+        "https://api.transposit.com/app/jplace/arbys_beef/login/google?redirectUri=https%3A%2F%2Faltoids.com",
+      );
+    });
+
+    it("returns the correct location (non-default transposit location)", () => {
+      const transposit: Transposit = new Transposit(
+        "jplace",
+        "arbys_beef",
+        "https://monkey.transposit.com",
+      );
+
+      expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
+        "https://monkey.transposit.com/app/jplace/arbys_beef/login/google?redirectUri=https%3A%2F%2Faltoids.com",
+      );
+    });
+  });
+
+  describe("login", () => {
+    it("redirects on login", () => {
+      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
+
+      window.location.href = `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=false`;
+
+      const transposit: Transposit = makeArbysTransposit();
+      transposit.handleLogin();
+
+      expect(
+        JSON.parse(
+          localStorage.getItem(
+            `${TRANSPOSIT_CONSUME_KEY_PREFIX}/jplace/arbys_beef`,
+          )!,
+        ),
+      ).toEqual(jplaceArbysClaims);
+      expect(window.history.replaceState).toHaveBeenCalledWith(
+        {},
+        window.document.title,
+        "/",
+      );
+    });
+
+    it("redirects when needs keys", () => {
+      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
+
+      window.location.href = `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=true`;
+
+      const transposit: Transposit = makeArbysTransposit();
+      transposit.handleLogin();
+
+      expect(
+        JSON.parse(
+          localStorage.getItem(
+            `${TRANSPOSIT_CONSUME_KEY_PREFIX}/jplace/arbys_beef`,
+          )!,
+        ),
+      ).toEqual(jplaceArbysClaims);
+      expect(window.location.href).toEqual(
+        "https://api.transposit.com/app/jplace/arbys_beef/connect?redirectUri=http%3A%2F%2Flocalhost%2F",
+      );
+    });
+
+    it("calls callback on login", () => {
+      const mockCallback = jest.fn();
+      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
+
+      window.location.href = `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=true`;
+
+      const transposit: Transposit = makeArbysTransposit();
+      transposit.handleLogin(mockCallback);
+
+      expect(
+        JSON.parse(
+          localStorage.getItem(
+            `${TRANSPOSIT_CONSUME_KEY_PREFIX}/jplace/arbys_beef`,
+          )!,
+        ),
+      ).toEqual(jplaceArbysClaims);
+      expect(mockCallback).toHaveBeenCalledWith({ needsKeys: true });
+      expect(window.history.replaceState).not.toHaveBeenCalled();
+      expect(window.location.href).toEqual(
+        `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=true`,
+      );
+    });
+
+    it("throws if callback is not a function", (done: DoneCallback) => {
+      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
+
+      window.location.href = `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=true`;
+
+      const transposit: Transposit = makeArbysTransposit();
+      try {
+        transposit.handleLogin("string" as any);
+        done.fail();
+      } catch (err) {
+        expect(err.message).toContain("Provided callback is not a function.");
+        done();
+      }
+    });
+
+    it("throws without jwt", (done: DoneCallback) => {
+      window.location.href = `https://arbys.com/`;
+
+      const transposit: Transposit = makeArbysTransposit();
+      try {
+        transposit.handleLogin();
+        done.fail();
+      } catch (err) {
+        expect(err.message).toContain(
+          "clientJwt query parameter could not be found",
+        );
+        done();
+      }
+    });
+
+    it("throws without needsKeys", (done: DoneCallback) => {
+      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
+
+      window.location.href = `https://arbys.com/?clientJwt=${clientJwt}`;
+
+      const transposit: Transposit = makeArbysTransposit();
+      try {
+        transposit.handleLogin();
+        done.fail();
+      } catch (err) {
+        expect(err.message).toContain(
+          "needsKeys query parameter could not be found. This is unexpected.",
+        );
+        done();
+      }
+    });
+
+    function testInvalidJwt(done: DoneCallback, invalidJwt: string) {
+      window.location.href = `https://arbys.com/?clientJwt=${invalidJwt}&needsKeys=false`;
+
+      const transposit: Transposit = makeArbysTransposit();
+      try {
+        transposit.handleLogin();
+        done.fail();
+      } catch (err) {
+        expect(err.message).toContain(
+          "clientJwt query parameter does not appear to be a valid JWT string",
+        );
+        done();
+      }
+    }
+
+    it("throws with invalid jwt (empty)", (done: DoneCallback) => {
+      testInvalidJwt(done, "");
+    });
+
+    it("throws with invalid jwt (not-properly formatted jwt)", (done: DoneCallback) => {
+      testInvalidJwt(done, "adsfasfdfd.fdsafadfsf");
+    });
+
+    it("throws with invalid jwt (not-base64 jwt)", (done: DoneCallback) => {
+      testInvalidJwt(done, "dffgdf--6667.fdsaf#f.");
+    });
+
+    it("throws with invalid jwt (not-json jwt)", (done: DoneCallback) => {
+      testInvalidJwt(
+        done,
+        `${btoa("{ not-=json: yeeeee")}.${btoa("{ not-=json: yeeeee")}.`,
+      );
+    });
+  });
+
+  describe("logout", () => {
+    let transposit: Transposit;
+
+    beforeEach(() => {
+      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
+
+      window.location.href = `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=false`;
+
+      transposit = makeArbysTransposit();
+      transposit.handleLogin();
+    });
+
+    it("handles successful logout", async () => {
+      expect.assertions(1);
+
+      (window.fetch as jest.Mock<{}>).mockImplementation(() =>
+        Promise.resolve(),
+      );
+
+      await transposit.logOut();
+
+      expect(
+        localStorage.getItem(
+          `${TRANSPOSIT_CONSUME_KEY_PREFIX}/jplace/arbys_beef`,
+        ),
+      ).toBeNull();
+    });
+  });
+});
