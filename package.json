@@ -6,6 +6,7 @@
   "types": "dist/src/index.d.ts",
   "author": "Transposit",
   "license": "Apache-2.0",
+  "repository": "git@github.com:transposit/transposit-js-sdk.git",
   "scripts": {
     "start": "yarn run build:dev --progress --watch",
     "build": "npm-run-all --parallel build:dev build:prod",
