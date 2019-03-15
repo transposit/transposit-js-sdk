@@ -1,6 +1,6 @@
 {
   "name": "transposit",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "description": "Library for building apps on top of Transposit",
   "main": "dist/bundle.dev.js",
   "types": "dist/src/index.d.ts",
