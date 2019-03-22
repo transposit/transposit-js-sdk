@@ -9,7 +9,7 @@ SDK for web apps using [Transposit](https://www.transposit.com) as a backend.
 
 ## Installation
 
-Install with npm or embed the libary in a `<script>` tag.
+Install with `npm` or embed the library in a `<script>` tag.
 
 ```shell
 $ npm install transposit
@@ -26,7 +26,7 @@ const transposit = new Transposit("jplace", "hello_world");
 ```
 ```html
 <script>
-  var transposit = new Transposit.Transposit("jplace", "hello_world");
+  const transposit = new Transposit.Transposit("jplace", "hello_world");
 </script>
 ```
 
