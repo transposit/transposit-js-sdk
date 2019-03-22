@@ -11,7 +11,7 @@ SDK for web apps using [Transposit](https://www.transposit.com) as a backend.
 
 Install with `npm` or embed the library in a `<script>` tag.
 
-```shell
+```bash
 $ npm install transposit
 ```
 ```html
@@ -113,7 +113,7 @@ Render a sign-out button. Use the SDK to sign out when the buttons is clicked.
   function signout() {
     transposit.logOut().then(() => {
         window.location.href = "/signin";
-    })
+    });
   }
 </script>
 ```
