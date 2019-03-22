@@ -1,7 +1,4 @@
----
-id: js-sdk
-title: JavaScript SDK
----
+# Reference
 
 The Transposit JavaScript SDK makes it simple to deal with sign-in, authentication, and running operations in your application.
 
@@ -138,7 +135,7 @@ transposit.getUserEmail();
 
 The full format of the return object for `transposit.runOperation`
 
-```javascript
+```typescript
 export interface EndRequestLog {
   status: "SUCCESS" | "ERROR";
   requestId: string;
