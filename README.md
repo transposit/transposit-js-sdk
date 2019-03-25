@@ -2,9 +2,11 @@
 
 SDK for web apps using [Transposit](https://www.transposit.com) as a backend.
 
-* **[Call endpoints](https://docs.transposit.com/building/endpoints):** Call your backend through an idiomatic library.
-* **[Require sign-in](https://docs.transposit.com/building/managed-authentication):** Ask users to sign in before interacting with your web app.
-* **[Manage authentication](https://docs.transposit.com/building/managed-authentication):** Allow users to grant access to their third-party data.
+* **Call endpoints:** Call your backend through an idiomatic library.
+* **Require sign-in:** Ask users to sign in before interacting with your web app.
+* **Manage authentication:** Allow users to grant access to their third-party data.
+
+To learn more about Transposit as a backend, check out the [Transposit documentation](https://docs.transposit.com).
 
 ## Installation
 
