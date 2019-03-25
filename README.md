@@ -6,7 +6,6 @@ SDK for web apps using [Transposit](https://www.transposit.com) as a backend.
 * **[Require sign-in](https://docs.transposit.com/building/managed-authentication):** Ask users to sign in before interacting with your web app.
 * **[Manage authentication](https://docs.transposit.com/building/managed-authentication):** Allow users to grant access to their third-party data.
 
-
 ## Installation
 
 Install with `npm` or embed the library in a `<script>` tag.
@@ -71,7 +70,7 @@ Create a page that displays a sign-in button. Use the SDK to begin sign-in when 
 </script>
 ```
 
-Add `/handle-signin` to your [Successful Sign-in Redirect URIs](docs/reference.md) in Transposit.
+Specify `<your-site>/handle-signin` as a **Successful sign-in URI** when you [enable user sign-in](https://docs.transposit.com/building/js-sdk) in Transposit.
 
 ### `/handle-signin`
 
@@ -133,14 +132,14 @@ Allow users to grant access to their third-party data. Use the SDK to link users
 
 ## FAQs
 
-> I am an SDK power user. Can you tell me more?
+### I am an SDK power user. Can you tell me more?
 
 Absolutely! See our [reference documentation](docs/reference.md).
 
-> I have a question about the SDK. Where should I ask?
+### I have a question about the SDK. Where should I ask?
 
 File an issue against this repository.
 
-> I have a question about Transposit. Where can I learn more?
+### I have a question about Transposit. Where can I learn more?
 
 Check out the [Transposit documentation](https://docs.transposit.com). Email [support@transposit.com](mailto:support@transposit.com).
