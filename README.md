@@ -1,4 +1,4 @@
-![](https://www.transposit.com/img/transposit-logo-black.png)
+<img src="https://www.transposit.com/img/transposit-logo-black.png" width="182px" alt="Transposit"/>
 
 # JavaScript SDK
 
