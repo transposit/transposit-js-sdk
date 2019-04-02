@@ -1,4 +1,5 @@
-# <img src="https://www.transposit.com/img/transposit-logo-black.png" width="182px" alt="Transposit"/> JavaScript SDK
+<img src="https://www.transposit.com/img/transposit-logo-black.png" width="182px" alt="Transposit"/>
+# JavaScript SDK
 
 SDK for web apps using [Transposit](https://www.transposit.com) as a backend.
 
