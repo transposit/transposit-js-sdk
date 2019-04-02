@@ -1,4 +1,6 @@
-# ![](assets/logomark.svg) Transposit JavaScript SDK
+<img src="https://www.transposit.com/img/transposit-logo-black.png" width="182px" alt="Transposit"/>
+
+# JavaScript SDK
 
 SDK for web apps using [Transposit](https://www.transposit.com) as a backend.
 
@@ -145,3 +147,7 @@ File an issue against this repository.
 ### I have a question about Transposit. Where can I learn more?
 
 Check out the [Transposit documentation](https://docs.transposit.com). Email [support@transposit.com](mailto:support@transposit.com).
+
+## License
+
+The Transposit JavaScript SDK is licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
