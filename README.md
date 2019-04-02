@@ -1,6 +1,6 @@
 <img src="https://www.transposit.com/img/transposit-logo-black.png" width="182px" alt="Transposit"/>
 
-# JavaScript SDK
+# Transposit JavaScript SDK
 
 SDK for web apps using [Transposit](https://www.transposit.com) as a backend.
 
@@ -8,7 +8,7 @@ SDK for web apps using [Transposit](https://www.transposit.com) as a backend.
 * **Require sign-in:** Ask users to sign in before interacting with your web app.
 * **Manage authentication:** Allow users to grant access to their third-party data.
 
-To learn more about Transposit as a backend, check out the [Transposit documentation](https://docs.transposit.com).
+To learn more about Transposit as a backend, see the [Transposit documentation](https://docs.transposit.com).
 
 ## Installation
 
@@ -17,9 +17,11 @@ Install with `npm` or embed the library in a `<script>` tag.
 ```bash
 $ npm install transposit
 ```
+
 ```html
 <script src="https://unpkg.com/transposit@0.7.3/dist/bundle.prod.js"></script>
 ```
+
 Instantiate the SDK with the `maintainer`/`name` pair that uniquely identifies your application:
 
 ```javascript
@@ -27,6 +29,7 @@ import { Transposit } from "transposit";
 
 const transposit = new Transposit("jplace", "hello_world");
 ```
+
 ```html
 <script>
   const transposit = new Transposit.Transposit("jplace", "hello_world");
@@ -136,9 +139,9 @@ Allow users to grant access to their third-party data. Use the SDK to link users
 
 ## FAQs
 
-### I am an SDK power user. Can you tell me more?
+### I'm an SDK power user. Can you tell me more?
 
-Absolutely! See our [reference documentation](docs/reference.md).
+Absolutely! See the Transposit [reference documentation](docs/reference.md).
 
 ### I have a question about the SDK. Where should I ask?
 
