@@ -2,18 +2,19 @@
   "compilerOptions": {
     "allowJs": false,
     "allowSyntheticDefaultImports": true,
-    "module": "esnext",
-    "moduleResolution": "Node",
-    "lib": ["es6", "dom"],
     "strictNullChecks": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "sourceMap": true,
+    "moduleResolution": "Node",
+    "lib": ["es6", "dom"],
     "target": "es5",
-    "declaration": true
+    "module": "esnext",
+    "declaration": true,
+    "outDir": "types",
+    "sourceMap": true,
   },
   "include": ["./src"]
 }
