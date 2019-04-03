@@ -1,9 +1,16 @@
 {
   "name": "transposit",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "author": "Transposit",
   "description": "SDK for web apps using Transposit as a backend",
-  "keywords": ["transposit", "sdk", "js", "ts", "api", "composition"],
+  "keywords": [
+    "transposit",
+    "sdk",
+    "js",
+    "ts",
+    "api",
+    "composition"
+  ],
   "license": "Apache-2.0",
   "homepage": "https://github.com/transposit/transposit-js-sdk",
   "bugs": "https://github.com/transposit/transposit-js-sdk/issues",
