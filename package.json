@@ -1,15 +1,18 @@
 {
   "name": "transposit",
   "version": "0.7.5",
-  "description": "Library for building apps on top of Transposit",
-  "main": "dist/bundle.dev.js",
-  "types": "dist/src/index.d.ts",
   "author": "Transposit",
+  "description": "SDK for web apps using Transposit as a backend",
+  "keywords": ["transposit", "sdk", "js", "ts", "api", "composition"],
   "license": "Apache-2.0",
+  "homepage": "https://github.com/transposit/transposit-js-sdk",
+  "bugs": "https://github.com/transposit/transposit-js-sdk/issues",
   "repository": {
     "type": "git",
-    "url": "git@github.com:transposit/transposit-js-sdk.git"
+    "url": "https://github.com/transposit/transposit-js-sdk.git"
   },
+  "browser": "dist/bundle.prod.js",
+  "types": "dist/types",
   "scripts": {
     "start": "yarn run build:dev --progress --watch",
     "build": "npm-run-all --parallel build:dev build:prod",
