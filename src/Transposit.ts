@@ -71,8 +71,8 @@ export class Transposit {
   }
 
   private areClientClaimsValid(clientClaims: ClientClaims): boolean {
-    const expiration = new Date(clientClaims.exp * 1000);
-    const now = new Date();
+    const expiration = clientClaims.exp * 1000;
+    const now = Date.now();
     return expiration > now;
   }
 
