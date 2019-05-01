@@ -192,10 +192,15 @@ export class Transposit {
     );
   }
 
-  getGoogleLoginLocation(requestUri?: string): string {
+  // Deprecated in favor of startLoginUri
+  getGoogleLoginLocation(redirectUri?: string): string {
+    return this.startLoginUri(redirectUri);
+  }
+
+  startLoginUri(redirectUri?: string): string {
     return this.apiUrl(
-      "/login/google?redirectUri=" +
-        encodeURIComponent(requestUri || window.location.href),
+      "/login/accounts?redirectUri=" +
+        encodeURIComponent(redirectUri || window.location.href),
     );
   }
 

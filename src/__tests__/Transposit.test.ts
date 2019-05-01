@@ -49,7 +49,10 @@ describe("Transposit", () => {
       const transposit: Transposit = new Transposit("jplace", "arbys_beef");
 
       expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
-        "https://api.transposit.com/app/jplace/arbys_beef/login/google?redirectUri=https%3A%2F%2Faltoids.com",
+        "https://api.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
+      );
+      expect(transposit.startLoginUri("https://altoids.com")).toEqual(
+        "https://api.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
       );
     });
 
@@ -61,7 +64,10 @@ describe("Transposit", () => {
       );
 
       expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
-        "https://monkey.transposit.com/app/jplace/arbys_beef/login/google?redirectUri=https%3A%2F%2Faltoids.com",
+        "https://monkey.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
+      );
+      expect(transposit.startLoginUri("https://altoids.com")).toEqual(
+        "https://monkey.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
       );
     });
   });

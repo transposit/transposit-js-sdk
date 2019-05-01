@@ -60,9 +60,9 @@ Once you've configured login for your application, add a link to start the login
 ```
 <button type="button" onclick="loginWithGoogle()">Login</button>
 
-function loginWithGoogle() { 
+function loginWithGoogle() {
   window.location.href =
-  transposit.getGoogleLoginLocation(window.location.origin +
+  transposit.startLoginUri(window.location.origin +
   window.location.pathname);
 }
 ```

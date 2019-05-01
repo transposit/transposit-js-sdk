@@ -82,11 +82,9 @@ transposit.getConnectLocation("localhost");
 // => "https://api.transposit.com/app/v1/gardener/hose/connect?redirectUri=localhost"
 ```
 
-## Get Google login location
+## Get URI to start Google login
 
-`transposit.getGoogleLoginLocation([redirectUri=window.location.href])`
-
-Runs an operation.
+`transposit.startLoginUri([redirectUri=window.location.href])`
 
 | Argument                           | Type   |                                                       |
 | :--------------------------------- | :----- | :---------------------------------------------------- |
@@ -98,7 +96,7 @@ Runs an operation.
 
 ```javascript
 transposit.getConnectLocation("localhost");
-// => "https://api.transposit.com/app/v1/gardener/hose/login/google?redirectUri=localhost"
+// => "https://api.transposit.com/app/v1/gardener/hose/login/accounts?redirectUri=localhost"
 ```
 
 ## Get user name
