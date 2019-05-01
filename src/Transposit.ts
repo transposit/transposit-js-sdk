@@ -70,6 +70,12 @@ export class Transposit {
     return JSON.parse(clientClaimJSON);
   }
 
+  private areClientClaimsValid(clientClaims: ClientClaims): boolean {
+    const expiration = new Date(clientClaims.exp * 1000);
+    const now = new Date();
+    return expiration > now;
+  }
+
   private persistClientClaims(clientClaimsJSON: string): void {
     localStorage.setItem(this.getConsumeKey(), clientClaimsJSON);
   }
@@ -217,7 +223,7 @@ export class Transposit {
 
   isLoggedIn(): boolean {
     const clientClaims = this.retrieveClientClaims();
-    return !!clientClaims;
+    return clientClaims !== null && this.areClientClaimsValid(clientClaims);
   }
 
   async runOperation(

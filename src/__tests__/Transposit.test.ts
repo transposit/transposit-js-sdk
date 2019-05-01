@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+import * as MockDate from "mockdate";
 import { Transposit, TRANSPOSIT_CONSUME_KEY_PREFIX } from "../Transposit";
+
 import DoneCallback = jest.DoneCallback;
 
 function createUnsignedJwt(claims: any): string {
@@ -26,6 +28,7 @@ function createUnsignedJwt(claims: any): string {
 describe("Transposit", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    MockDate.reset();
   });
 
   const jplaceArbysClaims: any = Object.freeze({
@@ -208,6 +211,39 @@ describe("Transposit", () => {
         done,
         `${btoa("{ not-=json: yeeeee")}.${btoa("{ not-=json: yeeeee")}.`,
       );
+    });
+  });
+
+  describe("isLoggedIn", () => {
+    it("knows when you're logged in", () => {
+      // 3 days before expiration
+      MockDate.set((jplaceArbysClaims.exp - 60 * 60 * 24 * 3) * 1000);
+
+      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
+      window.location.href = `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=false`;
+      const transposit: Transposit = makeArbysTransposit();
+      transposit.handleLogin();
+
+      expect(transposit.isLoggedIn()).toBe(true);
+    });
+
+    it("knows when you're logged out", () => {
+      window.location.href = `https://arbys.com/`;
+      const transposit: Transposit = makeArbysTransposit();
+
+      expect(transposit.isLoggedIn()).toBe(false);
+    });
+
+    it("knows when your session expired", () => {
+      // 3 days after expiration
+      MockDate.set((jplaceArbysClaims.exp + 60 * 60 * 24 * 3) * 1000);
+
+      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
+      window.location.href = `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=false`;
+      const transposit: Transposit = makeArbysTransposit();
+      transposit.handleLogin();
+
+      expect(transposit.isLoggedIn()).toBe(false);
     });
   });
 
