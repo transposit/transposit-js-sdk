@@ -76,7 +76,7 @@ describe("Transposit", () => {
     it("redirects on login", () => {
       const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
 
-      window.location.href = `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=false`;
+      window.location.search = `?clientJwt=${clientJwt}&needsKeys=false`;
 
       const transposit: Transposit = makeArbysTransposit();
       transposit.handleLogin();
@@ -98,7 +98,7 @@ describe("Transposit", () => {
     it("redirects when needs keys", () => {
       const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
 
-      window.location.href = `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=true`;
+      window.location.search = `?clientJwt=${clientJwt}&needsKeys=true`;
 
       const transposit: Transposit = makeArbysTransposit();
       transposit.handleLogin();
@@ -120,6 +120,7 @@ describe("Transposit", () => {
       const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
 
       window.location.href = `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=true`;
+      window.location.search = `?clientJwt=${clientJwt}&needsKeys=true`;
 
       const transposit: Transposit = makeArbysTransposit();
       transposit.handleLogin(mockCallback);
@@ -141,7 +142,7 @@ describe("Transposit", () => {
     it("throws if callback is not a function", (done: DoneCallback) => {
       const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
 
-      window.location.href = `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=true`;
+      window.location.search = `?clientJwt=${clientJwt}&needsKeys=true`;
 
       const transposit: Transposit = makeArbysTransposit();
       try {
@@ -154,7 +155,7 @@ describe("Transposit", () => {
     });
 
     it("throws without jwt", (done: DoneCallback) => {
-      window.location.href = `https://arbys.com/`;
+      window.location.search = "";
 
       const transposit: Transposit = makeArbysTransposit();
       try {
@@ -171,7 +172,7 @@ describe("Transposit", () => {
     it("throws without needsKeys", (done: DoneCallback) => {
       const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
 
-      window.location.href = `https://arbys.com/?clientJwt=${clientJwt}`;
+      window.location.search = `?clientJwt=${clientJwt}`;
 
       const transposit: Transposit = makeArbysTransposit();
       try {
@@ -186,7 +187,7 @@ describe("Transposit", () => {
     });
 
     function testInvalidJwt(done: DoneCallback, invalidJwt: string) {
-      window.location.href = `https://arbys.com/?clientJwt=${invalidJwt}&needsKeys=false`;
+      window.location.search = `?clientJwt=${invalidJwt}&needsKeys=false`;
 
       const transposit: Transposit = makeArbysTransposit();
       try {
@@ -226,7 +227,7 @@ describe("Transposit", () => {
       MockDate.set((jplaceArbysClaims.exp - 60 * 60 * 24 * 3) * 1000);
 
       const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
-      window.location.href = `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=false`;
+      window.location.search = `?clientJwt=${clientJwt}&needsKeys=false`;
       const transposit: Transposit = makeArbysTransposit();
       transposit.handleLogin();
 
@@ -234,20 +235,23 @@ describe("Transposit", () => {
     });
 
     it("knows when you're logged out", () => {
-      window.location.href = `https://arbys.com/`;
+      window.location.search = "";
       const transposit: Transposit = makeArbysTransposit();
 
       expect(transposit.isLoggedIn()).toBe(false);
     });
 
     it("knows when your session expired", () => {
+      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
+
+      window.location.search = `?clientJwt=${clientJwt}&needsKeys=false`;
+
+      let transposit: Transposit = makeArbysTransposit();
+      transposit.handleLogin();
+
       // 3 days after expiration
       MockDate.set((jplaceArbysClaims.exp + 60 * 60 * 24 * 3) * 1000);
-
-      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
-      window.location.href = `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=false`;
-      const transposit: Transposit = makeArbysTransposit();
-      transposit.handleLogin();
+      transposit = makeArbysTransposit();
 
       expect(transposit.isLoggedIn()).toBe(false);
     });
@@ -259,7 +263,7 @@ describe("Transposit", () => {
     beforeEach(() => {
       const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
 
-      window.location.href = `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=false`;
+      window.location.search = `?clientJwt=${clientJwt}&needsKeys=false`;
 
       transposit = makeArbysTransposit();
       transposit.handleLogin();
