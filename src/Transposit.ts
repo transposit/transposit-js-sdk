@@ -46,21 +46,21 @@ function getParameterByName(name: string): string | null {
   return decodeURIComponent(results[2].replace(/\+/g, " "));
 }
 
-export const TRANSPOSIT_CONSUME_KEY_PREFIX = "TRANSPOSIT_CONSUME_KEY";
+export const TRANSPOSIT_CONSUME_KEY = "TRANSPOSIT_CONSUME_KEY";
 
 export class Transposit {
-  constructor(private baseUrl: string) {}
+  constructor(private baseUri: string = "") {}
 
-  private getConsumeKey(): string {
-    return `${TRANSPOSIT_CONSUME_KEY_PREFIX}/${this.baseUrl}`;
+  private uri(relativePath: string = ""): string {
+    return `${this.baseUri}${relativePath}`;
   }
 
+  // todo backwards compatibility with old key?
   private retrieveClientClaims(): ClientClaims | null {
-    const clientClaimJSON = localStorage.getItem(this.getConsumeKey());
+    const clientClaimJSON = localStorage.getItem(TRANSPOSIT_CONSUME_KEY);
     if (!clientClaimJSON) {
       return null;
     }
-
     return JSON.parse(clientClaimJSON);
   }
 
@@ -71,15 +71,11 @@ export class Transposit {
   }
 
   private persistClientClaims(clientClaimsJSON: string): void {
-    localStorage.setItem(this.getConsumeKey(), clientClaimsJSON);
+    localStorage.setItem(TRANSPOSIT_CONSUME_KEY, clientClaimsJSON);
   }
 
   private clearClientClaims(): void {
-    localStorage.removeItem(this.getConsumeKey());
-  }
-
-  private apiUrl(relativePath: string = ""): string {
-    return `${this.baseUrl}${relativePath}`;
+    localStorage.removeItem(TRANSPOSIT_CONSUME_KEY);
   }
 
   handleLogin(callback?: (info: { needsKeys: boolean }) => void): void {
@@ -152,6 +148,7 @@ export class Transposit {
     }
   }
 
+  // todo fix logout
   async logOut(): Promise<void> {
     const clientClaims = this.retrieveClientClaims();
     if (!clientClaims) {
@@ -161,7 +158,7 @@ export class Transposit {
 
     // Attempt to invalidate session with Transposit
     try {
-      await fetch(this.apiUrl(`/api/v1/logout`), {
+      await fetch(this.uri(`/api/v1/logout`), {
         credentials: "include",
         method: "POST",
         headers: {
@@ -177,11 +174,27 @@ export class Transposit {
     this.clearClientClaims();
   }
 
-  getConnectLocation(requestUri?: string): string {
-    return this.apiUrl(
-      "/connect?redirectUri=" +
+  settingsUri(requestUri?: string): string {
+    return this.uri(
+      "/settings?redirectUri=" +
         encodeURIComponent(requestUri || window.location.href),
     );
+  }
+
+  startLoginUri(redirectUri?: string): string {
+    return this.uri(
+      "/login/accounts?redirectUri=" +
+        encodeURIComponent(redirectUri || window.location.href),
+    );
+  }
+
+  loginUri(): string {
+    return this.uri("/login");
+  }
+
+  // Deprecated in favor of settingsUri
+  getConnectLocation(requestUri?: string): string {
+    return this.settingsUri(requestUri);
   }
 
   // Deprecated in favor of startLoginUri
@@ -189,15 +202,9 @@ export class Transposit {
     return this.startLoginUri(redirectUri);
   }
 
-  startLoginUri(redirectUri?: string): string {
-    return this.apiUrl(
-      "/login/accounts?redirectUri=" +
-        encodeURIComponent(redirectUri || window.location.href),
-    );
-  }
-
+  // Deprecated in favor of loginUri
   getLoginLocation(): string {
-    return this.apiUrl("/login");
+    return this.uri("/login");
   }
 
   getUserEmail(): string | null {
@@ -240,17 +247,14 @@ export class Transposit {
     // if the response is an HTTP 404 or 500. Instead, it will resolve normally (with ok status
     // set to false), and it will only reject on network failure or if anything prevented the request from completing.
     try {
-      const response = await fetch(
-        this.apiUrl(`/api/v1/execute/${operationId}`),
-        {
-          credentials: "include",
-          method: "POST",
-          headers: headerInfo,
-          body: JSON.stringify({
-            parameters: params,
-          }),
-        },
-      );
+      const response = await fetch(this.uri(`/api/v1/execute/${operationId}`), {
+        credentials: "include",
+        method: "POST",
+        headers: headerInfo,
+        body: JSON.stringify({
+          parameters: params,
+        }),
+      });
       if (response.status >= 200 && response.status < 300) {
         return (await response.json()) as EndRequestLog;
       } else {
