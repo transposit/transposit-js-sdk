@@ -32,7 +32,7 @@ describe("Transposit", () => {
   });
 
   const jplaceArbysClaims: any = Object.freeze({
-    iss: "https://api.transposit.com",
+    iss: "https://console.transposit.com",
     sub: "jplace@transposit.com",
     exp: 1522255319,
     iat: 1521650519,
@@ -49,10 +49,10 @@ describe("Transposit", () => {
       const transposit: Transposit = new Transposit("jplace", "arbys_beef");
 
       expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
-        "https://api.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
+        "https://console.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
       );
       expect(transposit.startLoginUri("https://altoids.com")).toEqual(
-        "https://api.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
+        "https://console.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
       );
     });
 
@@ -111,7 +111,7 @@ describe("Transposit", () => {
         ),
       ).toEqual(jplaceArbysClaims);
       expect(window.location.href).toEqual(
-        "https://api.transposit.com/app/jplace/arbys_beef/connect?redirectUri=http%3A%2F%2Flocalhost%2F",
+        "https://console.transposit.com/app/jplace/arbys_beef/connect?redirectUri=http%3A%2F%2Flocalhost%2F",
       );
     });
 
