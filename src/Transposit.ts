@@ -49,16 +49,10 @@ function getParameterByName(name: string): string | null {
 export const TRANSPOSIT_CONSUME_KEY_PREFIX = "TRANSPOSIT_CONSUME_KEY";
 
 export class Transposit {
-  constructor(
-    private serviceMaintainer: string,
-    private serviceName: string,
-    private tpsHostedAppApiUrl: string = "https://api.transposit.com",
-  ) {}
+  constructor(private baseUrl: string) {}
 
   private getConsumeKey(): string {
-    return `${TRANSPOSIT_CONSUME_KEY_PREFIX}/${this.serviceMaintainer}/${
-      this.serviceName
-    }`;
+    return `${TRANSPOSIT_CONSUME_KEY_PREFIX}/${this.baseUrl}`;
   }
 
   private retrieveClientClaims(): ClientClaims | null {
@@ -85,9 +79,7 @@ export class Transposit {
   }
 
   private apiUrl(relativePath: string = ""): string {
-    return `${this.tpsHostedAppApiUrl}/app/${this.serviceMaintainer}/${
-      this.serviceName
-    }${relativePath}`;
+    return `${this.baseUrl}${relativePath}`;
   }
 
   handleLogin(callback?: (info: { needsKeys: boolean }) => void): void {

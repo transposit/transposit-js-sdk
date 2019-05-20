@@ -31,8 +31,9 @@ describe("Transposit", () => {
     MockDate.reset();
   });
 
+  const jplaceArbysBaseUri: string = "https://arbys-beef-xyz12.transposit.io";
   const jplaceArbysClaims: any = Object.freeze({
-    iss: "https://api.transposit.com",
+    iss: jplaceArbysBaseUri,
     sub: "jplace@transposit.com",
     exp: 1522255319,
     iat: 1521650519,
@@ -41,33 +42,18 @@ describe("Transposit", () => {
   });
 
   function makeArbysTransposit(): Transposit {
-    return new Transposit("jplace", "arbys_beef");
+    return new Transposit(jplaceArbysBaseUri);
   }
 
   describe("getGoogleLoginLocation", () => {
     it("returns the correct location", () => {
-      const transposit: Transposit = new Transposit("jplace", "arbys_beef");
+      const transposit: Transposit = makeArbysTransposit();
 
       expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
-        "https://api.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
+        "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
       );
       expect(transposit.startLoginUri("https://altoids.com")).toEqual(
-        "https://api.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
-      );
-    });
-
-    it("returns the correct location (non-default transposit location)", () => {
-      const transposit: Transposit = new Transposit(
-        "jplace",
-        "arbys_beef",
-        "https://monkey.transposit.com",
-      );
-
-      expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
-        "https://monkey.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
-      );
-      expect(transposit.startLoginUri("https://altoids.com")).toEqual(
-        "https://monkey.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
+        "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
       );
     });
   });
@@ -84,7 +70,7 @@ describe("Transposit", () => {
       expect(
         JSON.parse(
           localStorage.getItem(
-            `${TRANSPOSIT_CONSUME_KEY_PREFIX}/jplace/arbys_beef`,
+            `${TRANSPOSIT_CONSUME_KEY_PREFIX}/https://arbys-beef-xyz12.transposit.io`,
           )!,
         ),
       ).toEqual(jplaceArbysClaims);
@@ -106,12 +92,12 @@ describe("Transposit", () => {
       expect(
         JSON.parse(
           localStorage.getItem(
-            `${TRANSPOSIT_CONSUME_KEY_PREFIX}/jplace/arbys_beef`,
+            `${TRANSPOSIT_CONSUME_KEY_PREFIX}/https://arbys-beef-xyz12.transposit.io`,
           )!,
         ),
       ).toEqual(jplaceArbysClaims);
       expect(window.location.href).toEqual(
-        "https://api.transposit.com/app/jplace/arbys_beef/connect?redirectUri=http%3A%2F%2Flocalhost%2F",
+        "https://arbys-beef-xyz12.transposit.io/connect?redirectUri=http%3A%2F%2Flocalhost%2F",
       );
     });
 
@@ -276,7 +262,7 @@ describe("Transposit", () => {
 
       expect(
         localStorage.getItem(
-          `${TRANSPOSIT_CONSUME_KEY_PREFIX}/jplace/arbys_beef`,
+          `${TRANSPOSIT_CONSUME_KEY_PREFIX}/https://arbys-beef-xyz12.transposit.io`,
         ),
       ).toBeNull();
     });
