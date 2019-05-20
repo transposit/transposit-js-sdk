@@ -52,7 +52,7 @@ export class Transposit {
   constructor(
     private serviceMaintainer: string,
     private serviceName: string,
-    private tpsHostedAppApiUrl: string = "https://api.transposit.com",
+    private tpsHostedAppApiUrl: string = "https://console.transposit.com",
   ) {}
 
   private getConsumeKey(): string {
