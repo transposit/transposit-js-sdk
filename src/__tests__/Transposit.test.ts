@@ -15,11 +15,7 @@
  */
 
 import * as MockDate from "mockdate";
-import {
-  ClientClaims,
-  Transposit,
-  TRANSPOSIT_CONSUME_KEY_PREFIX,
-} from "../Transposit";
+import { ClientClaims, LOCAL_STORAGE_KEY, Transposit } from "../Transposit";
 
 import DoneCallback = jest.DoneCallback;
 
@@ -81,7 +77,7 @@ describe("Transposit", () => {
       expect(
         JSON.parse(
           localStorage.getItem(
-            `${TRANSPOSIT_CONSUME_KEY_PREFIX}/https://arbys-beef-xyz12.transposit.io`,
+            `${LOCAL_STORAGE_KEY}/https://arbys-beef-xyz12.transposit.io`,
           )!,
         ),
       ).toEqual(jplaceArbysClaims);
@@ -103,7 +99,7 @@ describe("Transposit", () => {
       expect(
         JSON.parse(
           localStorage.getItem(
-            `${TRANSPOSIT_CONSUME_KEY_PREFIX}/https://arbys-beef-xyz12.transposit.io`,
+            `${LOCAL_STORAGE_KEY}/https://arbys-beef-xyz12.transposit.io`,
           )!,
         ),
       ).toEqual(jplaceArbysClaims);
@@ -123,9 +119,7 @@ describe("Transposit", () => {
 
       expect(
         JSON.parse(
-          localStorage.getItem(
-            `${TRANSPOSIT_CONSUME_KEY_PREFIX}/jplace/arbys_beef`,
-          )!,
+          localStorage.getItem(`${LOCAL_STORAGE_KEY}/jplace/arbys_beef`)!,
         ),
       ).toEqual(jplaceArbysClaims);
       expect(mockCallback).toHaveBeenCalledWith({ needsKeys: true });
@@ -280,7 +274,7 @@ describe("Transposit", () => {
 
       expect(
         localStorage.getItem(
-          `${TRANSPOSIT_CONSUME_KEY_PREFIX}/https://arbys-beef-xyz12.transposit.io`,
+          `${LOCAL_STORAGE_KEY}/https://arbys-beef-xyz12.transposit.io`,
         ),
       ).toBeNull();
       expect(transposit.isLoggedIn()).toBe(false);

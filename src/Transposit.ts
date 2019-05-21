@@ -31,7 +31,14 @@ export interface OperationParameters {
   [paramName: string]: string;
 }
 
-export const TRANSPOSIT_CONSUME_KEY = "TRANSPOSIT_CONSUME_KEY";
+// https://my-app.transposit.io?clientJwt=...needKeys=... -> https://my-app.transposit.io
+function hereWithoutSearch(): string {
+  return `${window.location.protocol}//${window.location.host}${
+    window.location.pathname
+  }`;
+}
+
+export const LOCAL_STORAGE_KEY = "TRANSPOSIT_SESSION";
 
 export class Transposit {
   private claims: ClientClaims | null = null;
@@ -46,7 +53,7 @@ export class Transposit {
   }
 
   private loadClaims(): ClientClaims | null {
-    const claimsJSON = localStorage.getItem(TRANSPOSIT_CONSUME_KEY);
+    const claimsJSON = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!claimsJSON) {
       return null;
     }
@@ -66,11 +73,11 @@ export class Transposit {
   }
 
   private persistClaims(claimsJSON: string): void {
-    localStorage.setItem(TRANSPOSIT_CONSUME_KEY, claimsJSON);
+    localStorage.setItem(LOCAL_STORAGE_KEY, claimsJSON);
   }
 
   private clearClaims(): void {
-    localStorage.removeItem(TRANSPOSIT_CONSUME_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
   }
 
   private checkClaimsValid(claims: ClientClaims): boolean {
@@ -152,12 +159,7 @@ export class Transposit {
       callback({ needsKeys });
     } else {
       if (needsKeys) {
-        const hereWithoutQueryParameters: string = `${
-          window.location.protocol
-        }//${window.location.host}${window.location.pathname}`;
-        window.location.href = this.getConnectLocation(
-          hereWithoutQueryParameters,
-        );
+        window.location.href = this.settingsUri(hereWithoutSearch());
       } else {
         window.history.replaceState(
           {},
@@ -168,43 +170,27 @@ export class Transposit {
     }
   }
 
-  // todo fix logout
-  async logOut(): Promise<void> {
-    if (!this.claims) {
-      // Already logged out, nothing to do
-      return;
-    }
-
-    // Attempt to invalidate session with Transposit
-    try {
-      await fetch(this.uri(`/api/v1/logout`), {
-        credentials: "include",
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "X-PUBLIC-TOKEN": this.claims.publicToken,
-        },
-      });
-    } catch (err) {
-      // Logout is a best effort, do nothing if there is an error remotely
-    }
-
-    // Remove claims. Logout has succeeded.
+  // todo eventually allow a redirect uri
+  logOut(): void {
     this.clearClaims();
     this.claims = null;
+
+    window.location.href = this.uri("/logout");
   }
 
   settingsUri(requestUri?: string): string {
     return this.uri(
-      "/settings?redirectUri=" +
-        encodeURIComponent(requestUri || window.location.href),
+      `/settings?redirectUri=${encodeURIComponent(
+        requestUri || window.location.href,
+      )}`,
     );
   }
 
   startLoginUri(redirectUri?: string): string {
     return this.uri(
-      "/login/accounts?redirectUri=" +
-        encodeURIComponent(redirectUri || window.location.href),
+      `/login/accounts?redirectUri=${encodeURIComponent(
+        redirectUri || window.location.href,
+      )}`,
     );
   }
 
@@ -241,33 +227,26 @@ export class Transposit {
     operationId: string,
     params: OperationParameters = {},
   ): Promise<EndRequestLog> {
-    const headerInfo = {
-      "content-type": "application/json",
-    } as any;
-
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
     if (this.claims) {
-      headerInfo["X-PUBLIC-TOKEN"] = this.claims.publicToken;
+      headers["X-PUBLIC-TOKEN"] = this.claims.publicToken;
     }
 
-    // Note from MDN: The Promise returned from fetch() won’t reject on HTTP error status even
-    // if the response is an HTTP 404 or 500. Instead, it will resolve normally (with ok status
-    // set to false), and it will only reject on network failure or if anything prevented the request from completing.
-    try {
-      const response = await fetch(this.uri(`/api/v1/execute/${operationId}`), {
-        credentials: "include",
-        method: "POST",
-        headers: headerInfo,
-        body: JSON.stringify({
-          parameters: params,
-        }),
-      });
-      if (response.status >= 200 && response.status < 300) {
-        return (await response.json()) as EndRequestLog;
-      } else {
-        throw response;
-      }
-    } catch (e) {
-      throw e;
+    const response = await fetch(this.uri(`/api/v1/execute/${operationId}`), {
+      credentials: "include",
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        parameters: params,
+      }),
+    });
+
+    if (response.status >= 200 && response.status < 300) {
+      return (await response.json()) as EndRequestLog;
+    } else {
+      throw response;
     }
   }
 }
