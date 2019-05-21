@@ -31,73 +31,84 @@ export interface OperationParameters {
   [paramName: string]: string;
 }
 
-// From https://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript
-function getParameterByName(name: string): string | null {
-  const url = window.location.href;
-  name = name.replace(/[\[\]]/g, "\\$&");
-  const regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)");
-  const results = regex.exec(url);
-  if (!results) {
-    return null;
-  }
-  if (!results[2]) {
-    return "";
-  }
-  return decodeURIComponent(results[2].replace(/\+/g, " "));
-}
-
 export const TRANSPOSIT_CONSUME_KEY = "TRANSPOSIT_CONSUME_KEY";
 
 export class Transposit {
-  constructor(private baseUri: string = "") {}
+  private claims: ClientClaims | null = null;
+
+  // todo backwards compatibility with old key?
+  constructor(private baseUri: string = "") {
+    this.claims = this.loadClaims();
+  }
 
   private uri(relativePath: string = ""): string {
     return `${this.baseUri}${relativePath}`;
   }
 
-  // todo backwards compatibility with old key?
-  private retrieveClientClaims(): ClientClaims | null {
-    const clientClaimJSON = localStorage.getItem(TRANSPOSIT_CONSUME_KEY);
-    if (!clientClaimJSON) {
+  private loadClaims(): ClientClaims | null {
+    const claimsJSON = localStorage.getItem(TRANSPOSIT_CONSUME_KEY);
+    if (!claimsJSON) {
       return null;
     }
-    return JSON.parse(clientClaimJSON);
+
+    let claims: ClientClaims;
+    try {
+      claims = JSON.parse(claimsJSON);
+    } catch (err) {
+      return null;
+    }
+
+    if (!this.checkClaimsValid(claims)) {
+      return null;
+    }
+
+    return claims;
   }
 
-  private areClientClaimsValid(clientClaims: ClientClaims): boolean {
-    const expiration = clientClaims.exp * 1000;
+  private persistClaims(claimsJSON: string): void {
+    localStorage.setItem(TRANSPOSIT_CONSUME_KEY, claimsJSON);
+  }
+
+  private clearClaims(): void {
+    localStorage.removeItem(TRANSPOSIT_CONSUME_KEY);
+  }
+
+  private checkClaimsValid(claims: ClientClaims): boolean {
+    const expiration = claims.exp * 1000;
     const now = Date.now();
     return expiration > now;
   }
 
-  private persistClientClaims(clientClaimsJSON: string): void {
-    localStorage.setItem(TRANSPOSIT_CONSUME_KEY, clientClaimsJSON);
+  private assertLoggedIn(): void {
+    if (this.claims === null) {
+      throw new Error("No client claims found.");
+    }
   }
 
-  private clearClientClaims(): void {
-    localStorage.removeItem(TRANSPOSIT_CONSUME_KEY);
+  isLoggedIn(): boolean {
+    return this.claims !== null;
   }
 
   handleLogin(callback?: (info: { needsKeys: boolean }) => void): void {
     // Read query parameters
 
-    const maybeClientJwtString = getParameterByName("clientJwt");
-    if (maybeClientJwtString === null) {
+    const searchParams = new URLSearchParams(window.location.search);
+
+    if (!searchParams.has("clientJwt")) {
       throw new Error(
         "clientJwt query parameter could not be found. This method should only be called after redirection during login.",
       );
     }
-    const clientJwtString = maybeClientJwtString;
+    const clientJwtString = searchParams.get("clientJwt")!;
 
-    const maybeNeedsKeys = getParameterByName("needsKeys");
-    if (maybeNeedsKeys === null) {
+    if (!searchParams.has("needsKeys")) {
       throw new Error(
         "needsKeys query parameter could not be found. This is unexpected.",
       );
     }
-    const needsKeys = maybeNeedsKeys === "true";
+    const needsKeys = searchParams.get("needsKeys")! === "true";
 
-    // Parse JWT string and persist claims
+    // Parse JWT string
 
     const jwtParts: string[] = clientJwtString.split(".");
     if (jwtParts.length !== 3) {
@@ -105,25 +116,34 @@ export class Transposit {
         "clientJwt query parameter does not appear to be a valid JWT string. This method should only be called after redirection during login.",
       );
     }
-    let clientClaimsJSON: string;
+    let claimsJSON: string;
     try {
-      clientClaimsJSON = atob(jwtParts[1]);
+      claimsJSON = atob(jwtParts[1]);
     } catch (err) {
       throw new Error(
         "clientJwt query parameter does not appear to be a valid JWT string. This method should only be called after redirection during login.",
       );
     }
+    let claims: ClientClaims;
     try {
-      JSON.parse(clientClaimsJSON); // validate JSON
+      claims = JSON.parse(claimsJSON);
     } catch (err) {
       throw new Error(
         "clientJwt query parameter does not appear to be a valid JWT string. This method should only be called after redirection during login.",
       );
     }
+    if (!this.checkClaimsValid(claims)) {
+      throw new Error(
+        "clientJwt query parameter does not appear to be a valid JWT string. clientJwt is expired.",
+      );
+    }
 
-    this.persistClientClaims(clientClaimsJSON);
+    // Persist claims. Login has succeeded.
 
-    // Login has succeeded, either callback or default path replacement
+    this.claims = claims;
+    this.persistClaims(claimsJSON);
+
+    // Perform callback or default path replacement
 
     if (callback) {
       if (typeof callback !== "function") {
@@ -150,8 +170,7 @@ export class Transposit {
 
   // todo fix logout
   async logOut(): Promise<void> {
-    const clientClaims = this.retrieveClientClaims();
-    if (!clientClaims) {
+    if (!this.claims) {
       // Already logged out, nothing to do
       return;
     }
@@ -163,15 +182,16 @@ export class Transposit {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "X-PUBLIC-TOKEN": clientClaims.publicToken,
+          "X-PUBLIC-TOKEN": this.claims.publicToken,
         },
       });
     } catch (err) {
       // Logout is a best effort, do nothing if there is an error remotely
     }
 
-    // Delete JWT from local storage
-    this.clearClientClaims();
+    // Remove claims. Logout has succeeded.
+    this.clearClaims();
+    this.claims = null;
   }
 
   settingsUri(requestUri?: string): string {
@@ -208,26 +228,13 @@ export class Transposit {
   }
 
   getUserEmail(): string | null {
-    const clientClaims = this.retrieveClientClaims();
-    if (!clientClaims) {
-      return null;
-    }
-
-    return clientClaims.email;
+    this.assertLoggedIn();
+    return this.claims!.email;
   }
 
   getUserName(): string | null {
-    const clientClaims = this.retrieveClientClaims();
-    if (!clientClaims) {
-      return null;
-    }
-
-    return clientClaims.name;
-  }
-
-  isLoggedIn(): boolean {
-    const clientClaims = this.retrieveClientClaims();
-    return clientClaims !== null && this.areClientClaimsValid(clientClaims);
+    this.assertLoggedIn();
+    return this.claims!.name;
   }
 
   async runOperation(
@@ -238,9 +245,8 @@ export class Transposit {
       "content-type": "application/json",
     } as any;
 
-    const clientClaims = this.retrieveClientClaims();
-    if (clientClaims) {
-      headerInfo["X-PUBLIC-TOKEN"] = clientClaims.publicToken;
+    if (this.claims) {
+      headerInfo["X-PUBLIC-TOKEN"] = this.claims.publicToken;
     }
 
     // Note from MDN: The Promise returned from fetch() won’t reject on HTTP error status even
