@@ -15,43 +15,54 @@
  */
 
 import * as MockDate from "mockdate";
-import { Transposit, TRANSPOSIT_CONSUME_KEY_PREFIX } from "../Transposit";
+import {
+  ClientClaims,
+  Transposit,
+  TRANSPOSIT_CONSUME_KEY_PREFIX,
+} from "../Transposit";
 
 import DoneCallback = jest.DoneCallback;
 
-function createUnsignedJwt(claims: any): string {
+function createUnsignedJwt(expiredClaims: any): string {
   const header: string = btoa(JSON.stringify({ alg: "none" }));
-  const body: string = btoa(JSON.stringify(claims));
+  const body: string = btoa(JSON.stringify(expiredClaims));
   return `${header}.${body}.`;
 }
 
 describe("Transposit", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    MockDate.reset();
+    localStorage.clear();
+    MockDate.set(NOW);
   });
 
-  const jplaceArbysClaims: any = Object.freeze({
+  const NOW_MINUS_3_DAYS: number = 1521996119000;
+  const NOW: number = 1522255319000;
+  const NOW_PLUS_3_DAYS: number = 1522514519000;
+
+  const jplaceArbysClaims: ClientClaims = Object.freeze({
     iss: "https://api.transposit.com",
     sub: "jplace@transposit.com",
-    exp: 1522255319,
-    iat: 1521650519,
+    exp: NOW_PLUS_3_DAYS / 1000,
+    iat: NOW_MINUS_3_DAYS / 1000,
     publicToken: "thisisapublictoken",
     repository: "jplace/arbys_beef",
+    email: "jplace@transposit.com",
+    name: "Jordan 'The Beef' Place",
   });
 
   function makeArbysTransposit(): Transposit {
     return new Transposit("jplace", "arbys_beef");
   }
 
-  describe("getGoogleLoginLocation", () => {
+  describe("startLoginUri", () => {
     it("returns the correct location", () => {
       const transposit: Transposit = new Transposit("jplace", "arbys_beef");
 
-      expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
+      expect(transposit.startLoginUri("https://altoids.com")).toEqual(
         "https://api.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
       );
-      expect(transposit.startLoginUri("https://altoids.com")).toEqual(
+      expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
         "https://api.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
       );
     });
@@ -63,17 +74,17 @@ describe("Transposit", () => {
         "https://monkey.transposit.com",
       );
 
-      expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
+      expect(transposit.startLoginUri("https://altoids.com")).toEqual(
         "https://monkey.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
       );
-      expect(transposit.startLoginUri("https://altoids.com")).toEqual(
+      expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
         "https://monkey.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
       );
     });
   });
 
-  describe("login", () => {
-    it("redirects on login", () => {
+  describe("handleLogin", () => {
+    it("calls replaceState", () => {
       const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
 
       window.location.search = `?clientJwt=${clientJwt}&needsKeys=false`;
@@ -115,11 +126,10 @@ describe("Transposit", () => {
       );
     });
 
-    it("calls callback on login", () => {
+    it("calls callback", () => {
       const mockCallback = jest.fn();
       const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
 
-      window.location.href = `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=true`;
       window.location.search = `?clientJwt=${clientJwt}&needsKeys=true`;
 
       const transposit: Transposit = makeArbysTransposit();
@@ -134,9 +144,6 @@ describe("Transposit", () => {
       ).toEqual(jplaceArbysClaims);
       expect(mockCallback).toHaveBeenCalledWith({ needsKeys: true });
       expect(window.history.replaceState).not.toHaveBeenCalled();
-      expect(window.location.href).toEqual(
-        `https://arbys.com/?clientJwt=${clientJwt}&needsKeys=true`,
-      );
     });
 
     it("throws if callback is not a function", (done: DoneCallback) => {
@@ -219,6 +226,13 @@ describe("Transposit", () => {
         `${btoa("{ not-=json: yeeeee")}.${btoa("{ not-=json: yeeeee")}.`,
       );
     });
+
+    it("throws with invalid jwt (expired)", (done: DoneCallback) => {
+      const expiredClaims = Object.assign({}, jplaceArbysClaims, {
+        exp: NOW_MINUS_3_DAYS / 1000,
+      });
+      testInvalidJwt(done, createUnsignedJwt(expiredClaims));
+    });
   });
 
   describe("isLoggedIn", () => {
@@ -270,7 +284,7 @@ describe("Transposit", () => {
     });
 
     it("handles successful logout", async () => {
-      expect.assertions(1);
+      expect.assertions(2);
 
       (window.fetch as jest.Mock<{}>).mockImplementation(() =>
         Promise.resolve(),
@@ -283,6 +297,7 @@ describe("Transposit", () => {
           `${TRANSPOSIT_CONSUME_KEY_PREFIX}/jplace/arbys_beef`,
         ),
       ).toBeNull();
+      expect(transposit.isLoggedIn()).toBe(false);
     });
   });
 });

@@ -143,6 +143,11 @@ export class Transposit {
         "clientJwt query parameter does not appear to be a valid JWT string. This method should only be called after redirection during login.",
       );
     }
+    if (!this.checkClaimsValid(claims)) {
+      throw new Error(
+        "clientJwt query parameter does not appear to be a valid JWT string. clientJwt is expired.",
+      );
+    }
 
     // Persist claims. Login has succeeded.
 
