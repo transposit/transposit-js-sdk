@@ -42,12 +42,12 @@ export class Transposit {
   private claims: ClientClaims | null = null;
 
   // todo backwards compatibility with old key?
-  constructor(private baseUri: string = "") {
+  constructor(private hostedAppOrigin: string = "") {
     this.claims = this.loadClaims();
   }
 
-  private uri(relativePath: string = ""): string {
-    return `${this.baseUri}${relativePath}`;
+  private uri(path: string = ""): string {
+    return `${this.hostedAppOrigin}${path}`;
   }
 
   private loadClaims(): ClientClaims | null {
