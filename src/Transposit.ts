@@ -33,9 +33,7 @@ export interface OperationParameters {
 
 // https://my-app.transposit.io?clientJwt=...needKeys=... -> https://my-app.transposit.io
 function hereWithoutSearch(): string {
-  return `${window.location.protocol}//${window.location.host}${
-    window.location.pathname
-  }`;
+  return `${window.location.origin}${window.location.pathname}`;
 }
 
 export const LOCAL_STORAGE_KEY = "TRANSPOSIT_SESSION";
@@ -170,18 +168,19 @@ export class Transposit {
     }
   }
 
-  // todo eventually allow a redirect uri
-  logOut(): void {
+  logOut(redirectUri: string): void {
     this.clearClaims();
     this.claims = null;
 
-    window.location.href = this.uri("/logout");
+    window.location.href = this.uri(
+      `/logout?redirectUri=${encodeURIComponent(redirectUri)}`,
+    );
   }
 
-  settingsUri(requestUri?: string): string {
+  settingsUri(redirectUri?: string): string {
     return this.uri(
       `/settings?redirectUri=${encodeURIComponent(
-        requestUri || window.location.href,
+        redirectUri || window.location.href,
       )}`,
     );
   }
@@ -194,13 +193,9 @@ export class Transposit {
     );
   }
 
-  loginUri(): string {
-    return this.uri("/login");
-  }
-
   // Deprecated in favor of settingsUri
-  getConnectLocation(requestUri?: string): string {
-    return this.settingsUri(requestUri);
+  getConnectLocation(redirectUri?: string): string {
+    return this.settingsUri(redirectUri);
   }
 
   // Deprecated in favor of startLoginUri
@@ -208,7 +203,7 @@ export class Transposit {
     return this.startLoginUri(redirectUri);
   }
 
-  // Deprecated in favor of loginUri
+  // Deprecated
   getLoginLocation(): string {
     return this.uri("/login");
   }

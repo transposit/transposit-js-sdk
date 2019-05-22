@@ -74,13 +74,9 @@ describe("Transposit", () => {
       const transposit: Transposit = makeArbysTransposit();
       transposit.handleLogin();
 
-      expect(
-        JSON.parse(
-          localStorage.getItem(
-            `${LOCAL_STORAGE_KEY}/https://arbys-beef-xyz12.transposit.io`,
-          )!,
-        ),
-      ).toEqual(jplaceArbysClaims);
+      expect(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)!)).toEqual(
+        jplaceArbysClaims,
+      );
       expect(window.history.replaceState).toHaveBeenCalledWith(
         {},
         window.document.title,
@@ -96,13 +92,9 @@ describe("Transposit", () => {
       const transposit: Transposit = makeArbysTransposit();
       transposit.handleLogin();
 
-      expect(
-        JSON.parse(
-          localStorage.getItem(
-            `${LOCAL_STORAGE_KEY}/https://arbys-beef-xyz12.transposit.io`,
-          )!,
-        ),
-      ).toEqual(jplaceArbysClaims);
+      expect(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)!)).toEqual(
+        jplaceArbysClaims,
+      );
       expect(window.location.href).toEqual(
         "https://arbys-beef-xyz12.transposit.io/connect?redirectUri=http%3A%2F%2Flocalhost%2F",
       );
@@ -117,11 +109,9 @@ describe("Transposit", () => {
       const transposit: Transposit = makeArbysTransposit();
       transposit.handleLogin(mockCallback);
 
-      expect(
-        JSON.parse(
-          localStorage.getItem(`${LOCAL_STORAGE_KEY}/jplace/arbys_beef`)!,
-        ),
-      ).toEqual(jplaceArbysClaims);
+      expect(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)!)).toEqual(
+        jplaceArbysClaims,
+      );
       expect(mockCallback).toHaveBeenCalledWith({ needsKeys: true });
       expect(window.history.replaceState).not.toHaveBeenCalled();
     });
@@ -263,21 +253,14 @@ describe("Transposit", () => {
       transposit.handleLogin();
     });
 
-    it("handles successful logout", async () => {
-      expect.assertions(2);
+    it("handles successful logout", () => {
+      transposit.logOut("https://arbys-beef-xyz12.transposit.io/login");
 
-      (window.fetch as jest.Mock<{}>).mockImplementation(() =>
-        Promise.resolve(),
-      );
-
-      await transposit.logOut();
-
-      expect(
-        localStorage.getItem(
-          `${LOCAL_STORAGE_KEY}/https://arbys-beef-xyz12.transposit.io`,
-        ),
-      ).toBeNull();
+      expect(localStorage.getItem(LOCAL_STORAGE_KEY)).toBeNull();
       expect(transposit.isLoggedIn()).toBe(false);
+      expect(window.location.href).toEqual(
+        "https://arbys-beef-xyz12.transposit.io/logout?redirectUri=http%3A%2F%2Flocalhost%2F",
+      );
     });
   });
 });
