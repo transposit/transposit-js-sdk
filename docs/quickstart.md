@@ -20,7 +20,7 @@ yarn add transposit
 Add via a script tag:
 
 ```markup
-<script src="https://unpkg.com/transposit@0.7.2/dist/bundle.prod.js"></script>
+<script src="https://unpkg.com/transposit@1.0.0/dist/bundle.prod.js"></script>
 ```
 
 ## Usage
@@ -36,7 +36,7 @@ esmodules:
 ```javascript
 import { Transposit } from "transposit";
 
-const transposit = new Transposit(serviceMaintainer, serviceName);
+const transposit = new Transposit("https://hello-world-xyz12.transposit.io");
 ```
 
 commonjs modules:
@@ -44,13 +44,13 @@ commonjs modules:
 ```javascript
 const transposit = require("transposit");
 
-const transposit = new Transposit(serviceMaintainer, serviceName);
+const transposit = new Transposit("https://hello-world-xyz12.transposit.io");
 ```
 
 Or, if you've made the library globally available via a script tag:
 
 ```javascript
-var transposit = new Transposit.Transposit(serviceMaintainer, serviceName);
+var transposit = new Transposit.Transposit("https://hello-world-xyz12.transposit.io");
 ```
 
 ### Login
@@ -80,7 +80,7 @@ Under the hood, this goes through a number of steps to ensure your session is se
 If your application requires user credentials for data connections, send users to the Transposit-hosted data connections page. You can get the URL for this page from the SDK:
 
 ```javascript
-transposit.getConnectionLocation();
+transposit.settingsUri();
 ```
 
 ### Running deployed operation
