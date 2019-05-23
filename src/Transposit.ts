@@ -41,7 +41,6 @@ export const LOCAL_STORAGE_KEY = "TRANSPOSIT_SESSION";
 export class Transposit {
   private claims: ClientClaims | null = null;
 
-  // todo backwards compatibility with old key?
   constructor(private hostedAppOrigin: string = "") {
     this.claims = this.loadClaims();
   }
