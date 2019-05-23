@@ -46,8 +46,7 @@ describe("Transposit", () => {
     jest.clearAllMocks();
     localStorage.clear();
     MockDate.set(NOW);
-    window.location.search = "";
-    window.location.href = arbysUri("/");
+    setHref(ARBYS_ORIGIN, "/", "");
   });
 
   const jplaceArbysClaims: ClientClaims = Object.freeze({
