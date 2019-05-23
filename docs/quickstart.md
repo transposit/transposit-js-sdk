@@ -75,9 +75,9 @@ transposit.handleLogin();
 
 Under the hood, this goes through a number of steps to ensure your session is set up correctly in the browser. You are now ready to authorize and run operations!
 
-### Authorizations
+### Settings
 
-If your application requires user credentials for data connections, send users to the Transposit-hosted data connections page. You can get the URL for this page from the SDK:
+If your application requires user credentials for data connections, send users to the Transposit-hosted settings page. You can get the URL for this page from the SDK:
 
 ```javascript
 transposit.settingsUri();
