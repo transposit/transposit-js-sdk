@@ -19,7 +19,7 @@ $ npm install transposit
 ```
 
 ```html
-<script src="https://unpkg.com/transposit@0.7.3/dist/bundle.prod.js"></script>
+<script src="https://unpkg.com/transposit@1.0.0/dist/bundle.prod.js"></script>
 ```
 
 Instantiate the SDK with the hosted app origin that uniquely identifies your application:
@@ -122,7 +122,7 @@ Render a sign-out button. Use the SDK to sign out when the buttons is clicked.
 </script>
 ```
 
-## Settings
+## Managed authentication
 
 Allow users to grant access to their third-party data. Use the SDK to link users to the Transposit settings page.
 
