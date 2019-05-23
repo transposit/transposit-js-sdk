@@ -19,20 +19,20 @@ $ npm install transposit
 ```
 
 ```html
-<script src="https://unpkg.com/transposit@0.7.3/dist/bundle.prod.js"></script>
+<script src="https://unpkg.com/transposit@1.0.0/dist/bundle.prod.js"></script>
 ```
 
-Instantiate the SDK with the `maintainer`/`name` pair that uniquely identifies your application:
+Instantiate the SDK with the hosted app origin that uniquely identifies your application:
 
 ```javascript
 import { Transposit } from "transposit";
 
-const transposit = new Transposit("jplace", "hello_world");
+const transposit = new Transposit("https://hello-world-xyz12.transposit.io");
 ```
 
 ```html
 <script>
-  const transposit = new Transposit.Transposit("jplace", "hello_world");
+  const transposit = new Transposit.Transposit("https://hello-world-xyz12.transposit.io");
 </script>
 ```
 
@@ -117,22 +117,20 @@ Render a sign-out button. Use the SDK to sign out when the buttons is clicked.
 <button type="button" onclick="signout()">Sign out</button>
 <script>
   function signout() {
-    transposit.logOut().then(() => {
-        window.location.href = "/signin";
-    });
+    transposit.logOut(`${window.location.origin}/signin`);
   }
 </script>
 ```
 
 ## Managed authentication
 
-Allow users to grant access to their third-party data. Use the SDK to link users to a Transposit page where they can securely provide credentials.
+Allow users to grant access to their third-party data. Use the SDK to link users to the Transposit settings page.
 
 ```html
-<button type="button" onclick="connect()">Connect</button>
+<button type="button" onclick="settings()">Settings</button>
 <script>
-  function connect() {
-    window.location.href = transposit.getConnectLocation();
+  function settings() {
+    window.location.href = transposit.settingsUri();
   }
 </script>
 ```

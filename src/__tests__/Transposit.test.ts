@@ -15,13 +15,18 @@
  */
 
 import * as MockDate from "mockdate";
-import {
-  ClientClaims,
-  Transposit,
-  TRANSPOSIT_CONSUME_KEY_PREFIX,
-} from "../Transposit";
-
+import { ClientClaims, LOCAL_STORAGE_KEY, Transposit } from "../Transposit";
 import DoneCallback = jest.DoneCallback;
+
+const ARBYS_ORIGIN: string = "https://arbys-beef-xyz12.transposit.io";
+
+function arbysUri(path: string = ""): string {
+  return `${ARBYS_ORIGIN}${path}`;
+}
+
+const NOW_MINUS_3_DAYS: number = 1521996119000;
+const NOW: number = 1522255319000;
+const NOW_PLUS_3_DAYS: number = 1522514519000;
 
 function createUnsignedJwt(claims: ClientClaims): string {
   const header: string = btoa(JSON.stringify({ alg: "none" }));
@@ -29,19 +34,23 @@ function createUnsignedJwt(claims: ClientClaims): string {
   return `${header}.${body}.`;
 }
 
+function setHref(origin: string, pathname: string, search: string): void {
+  window.location.href = `${origin}${pathname}${search}`;
+  (window.location as any).origin = origin; // origin is normally read-only, but not in tests :)
+  window.location.pathname = pathname;
+  window.location.search = search;
+}
+
 describe("Transposit", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.clear();
     MockDate.set(NOW);
+    setHref(ARBYS_ORIGIN, "/", "");
   });
 
-  const NOW_MINUS_3_DAYS: number = 1521996119000;
-  const NOW: number = 1522255319000;
-  const NOW_PLUS_3_DAYS: number = 1522514519000;
-
   const jplaceArbysClaims: ClientClaims = Object.freeze({
-    iss: "https://api.transposit.com",
+    iss: ARBYS_ORIGIN,
     sub: "jplace@transposit.com",
     exp: NOW_PLUS_3_DAYS / 1000,
     iat: NOW_MINUS_3_DAYS / 1000,
@@ -50,55 +59,60 @@ describe("Transposit", () => {
     email: "jplace@transposit.com",
     name: "Jordan 'The Beef' Place",
   });
+  const jplaceArbysJwt: string = createUnsignedJwt(jplaceArbysClaims);
 
-  function makeArbysTransposit(): Transposit {
-    return new Transposit("jplace", "arbys_beef");
-  }
-
-  describe("startLoginUri", () => {
-    it("returns the correct location", () => {
-      const transposit: Transposit = new Transposit("jplace", "arbys_beef");
-
-      expect(transposit.startLoginUri("https://altoids.com")).toEqual(
-        "https://api.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
+  describe("isLoggedIn", () => {
+    it("knows when you've just logged in", () => {
+      setHref(
+        ARBYS_ORIGIN,
+        "/",
+        `?clientJwt=${jplaceArbysJwt}&needsKeys=false`,
       );
-      expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
-        "https://api.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
-      );
+
+      const transposit: Transposit = new Transposit();
+      transposit.handleLogin();
+
+      expect(transposit.isLoggedIn()).toBe(true);
     });
 
-    it("returns the correct location (non-default transposit location)", () => {
-      const transposit: Transposit = new Transposit(
-        "jplace",
-        "arbys_beef",
-        "https://monkey.transposit.com",
+    it("knows when you're logged out", () => {
+      const transposit: Transposit = new Transposit();
+
+      expect(transposit.isLoggedIn()).toBe(false);
+    });
+
+    it("knows when your session expired", () => {
+      setHref(
+        ARBYS_ORIGIN,
+        "/",
+        `?clientJwt=${jplaceArbysJwt}&needsKeys=false`,
       );
 
-      expect(transposit.startLoginUri("https://altoids.com")).toEqual(
-        "https://monkey.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
-      );
-      expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
-        "https://monkey.transposit.com/app/jplace/arbys_beef/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
-      );
+      let transposit: Transposit = new Transposit();
+      transposit.handleLogin();
+
+      // 3 days after expiration
+      MockDate.set((jplaceArbysClaims.exp + 60 * 60 * 24 * 3) * 1000);
+      transposit = new Transposit();
+
+      expect(transposit.isLoggedIn()).toBe(false);
     });
   });
 
   describe("handleLogin", () => {
     it("calls replaceState", () => {
-      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
+      setHref(
+        ARBYS_ORIGIN,
+        "/",
+        `?clientJwt=${jplaceArbysJwt}&needsKeys=false`,
+      );
 
-      window.location.search = `?clientJwt=${clientJwt}&needsKeys=false`;
-
-      const transposit: Transposit = makeArbysTransposit();
+      const transposit: Transposit = new Transposit();
       transposit.handleLogin();
 
-      expect(
-        JSON.parse(
-          localStorage.getItem(
-            `${TRANSPOSIT_CONSUME_KEY_PREFIX}/jplace/arbys_beef`,
-          )!,
-        ),
-      ).toEqual(jplaceArbysClaims);
+      expect(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)!)).toEqual(
+        jplaceArbysClaims,
+      );
       expect(window.history.replaceState).toHaveBeenCalledWith(
         {},
         window.document.title,
@@ -107,51 +121,38 @@ describe("Transposit", () => {
     });
 
     it("redirects when needs keys", () => {
-      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
+      setHref(ARBYS_ORIGIN, "/", `?clientJwt=${jplaceArbysJwt}&needsKeys=true`);
 
-      window.location.search = `?clientJwt=${clientJwt}&needsKeys=true`;
-
-      const transposit: Transposit = makeArbysTransposit();
+      const transposit: Transposit = new Transposit();
       transposit.handleLogin();
 
-      expect(
-        JSON.parse(
-          localStorage.getItem(
-            `${TRANSPOSIT_CONSUME_KEY_PREFIX}/jplace/arbys_beef`,
-          )!,
-        ),
-      ).toEqual(jplaceArbysClaims);
+      expect(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)!)).toEqual(
+        jplaceArbysClaims,
+      );
       expect(window.location.href).toEqual(
-        "https://api.transposit.com/app/jplace/arbys_beef/connect?redirectUri=http%3A%2F%2Flocalhost%2F",
+        "/settings?redirectUri=https%3A%2F%2Farbys-beef-xyz12.transposit.io%2F",
       );
     });
 
     it("calls callback", () => {
+      setHref(ARBYS_ORIGIN, "/", `?clientJwt=${jplaceArbysJwt}&needsKeys=true`);
+
       const mockCallback = jest.fn();
-      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
 
-      window.location.search = `?clientJwt=${clientJwt}&needsKeys=true`;
-
-      const transposit: Transposit = makeArbysTransposit();
+      const transposit: Transposit = new Transposit();
       transposit.handleLogin(mockCallback);
 
-      expect(
-        JSON.parse(
-          localStorage.getItem(
-            `${TRANSPOSIT_CONSUME_KEY_PREFIX}/jplace/arbys_beef`,
-          )!,
-        ),
-      ).toEqual(jplaceArbysClaims);
+      expect(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)!)).toEqual(
+        jplaceArbysClaims,
+      );
       expect(mockCallback).toHaveBeenCalledWith({ needsKeys: true });
       expect(window.history.replaceState).not.toHaveBeenCalled();
     });
 
     it("throws if callback is not a function", (done: DoneCallback) => {
-      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
+      setHref(ARBYS_ORIGIN, "/", `?clientJwt=${jplaceArbysJwt}&needsKeys=true`);
 
-      window.location.search = `?clientJwt=${clientJwt}&needsKeys=true`;
-
-      const transposit: Transposit = makeArbysTransposit();
+      const transposit: Transposit = new Transposit();
       try {
         transposit.handleLogin("string" as any);
         done.fail();
@@ -162,9 +163,9 @@ describe("Transposit", () => {
     });
 
     it("throws without jwt", (done: DoneCallback) => {
-      window.location.search = "";
+      setHref(ARBYS_ORIGIN, "/", "");
 
-      const transposit: Transposit = makeArbysTransposit();
+      const transposit: Transposit = new Transposit();
       try {
         transposit.handleLogin();
         done.fail();
@@ -177,11 +178,9 @@ describe("Transposit", () => {
     });
 
     it("throws without needsKeys", (done: DoneCallback) => {
-      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
+      setHref(ARBYS_ORIGIN, "/", `?clientJwt=${jplaceArbysJwt}`);
 
-      window.location.search = `?clientJwt=${clientJwt}`;
-
-      const transposit: Transposit = makeArbysTransposit();
+      const transposit: Transposit = new Transposit();
       try {
         transposit.handleLogin();
         done.fail();
@@ -194,9 +193,9 @@ describe("Transposit", () => {
     });
 
     function testInvalidJwt(done: DoneCallback, invalidJwt: string) {
-      window.location.search = `?clientJwt=${invalidJwt}&needsKeys=false`;
+      setHref(ARBYS_ORIGIN, "/", `?clientJwt=${invalidJwt}&needsKeys=false`);
 
-      const transposit: Transposit = makeArbysTransposit();
+      const transposit: Transposit = new Transposit();
       try {
         transposit.handleLogin();
         done.fail();
@@ -235,69 +234,40 @@ describe("Transposit", () => {
     });
   });
 
-  describe("isLoggedIn", () => {
-    it("knows when you're logged in", () => {
-      // 3 days before expiration
-      MockDate.set((jplaceArbysClaims.exp - 60 * 60 * 24 * 3) * 1000);
-
-      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
-      window.location.search = `?clientJwt=${clientJwt}&needsKeys=false`;
-      const transposit: Transposit = makeArbysTransposit();
-      transposit.handleLogin();
-
-      expect(transposit.isLoggedIn()).toBe(true);
-    });
-
-    it("knows when you're logged out", () => {
-      window.location.search = "";
-      const transposit: Transposit = makeArbysTransposit();
-
-      expect(transposit.isLoggedIn()).toBe(false);
-    });
-
-    it("knows when your session expired", () => {
-      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
-
-      window.location.search = `?clientJwt=${clientJwt}&needsKeys=false`;
-
-      let transposit: Transposit = makeArbysTransposit();
-      transposit.handleLogin();
-
-      // 3 days after expiration
-      MockDate.set((jplaceArbysClaims.exp + 60 * 60 * 24 * 3) * 1000);
-      transposit = makeArbysTransposit();
-
-      expect(transposit.isLoggedIn()).toBe(false);
-    });
-  });
-
   describe("logout", () => {
     let transposit: Transposit;
 
     beforeEach(() => {
-      const clientJwt: string = createUnsignedJwt(jplaceArbysClaims);
-
-      window.location.search = `?clientJwt=${clientJwt}&needsKeys=false`;
-
-      transposit = makeArbysTransposit();
+      setHref(
+        ARBYS_ORIGIN,
+        "/",
+        `?clientJwt=${jplaceArbysJwt}&needsKeys=false`,
+      );
+      transposit = new Transposit();
       transposit.handleLogin();
     });
 
-    it("handles successful logout", async () => {
-      expect.assertions(2);
+    it("handles successful logout", () => {
+      transposit.logOut(arbysUri("/login"));
 
-      (window.fetch as jest.Mock<{}>).mockImplementation(() =>
-        Promise.resolve(),
-      );
-
-      await transposit.logOut();
-
-      expect(
-        localStorage.getItem(
-          `${TRANSPOSIT_CONSUME_KEY_PREFIX}/jplace/arbys_beef`,
-        ),
-      ).toBeNull();
+      expect(localStorage.getItem(LOCAL_STORAGE_KEY)).toBeNull();
       expect(transposit.isLoggedIn()).toBe(false);
+      expect(window.location.href).toEqual(
+        "/logout?redirectUri=https%3A%2F%2Farbys-beef-xyz12.transposit.io%2Flogin",
+      );
+    });
+  });
+
+  describe("startLoginUri", () => {
+    it("returns the correct location", () => {
+      const transposit: Transposit = new Transposit(ARBYS_ORIGIN);
+
+      expect(transposit.startLoginUri("https://altoids.com")).toEqual(
+        "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
+      );
+      expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
+        "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
+      );
     });
   });
 });

@@ -36,11 +36,15 @@ try {
 
 ## Log out
 
-`transposit.logOut()`
+`transposit.logOut(redirectUri)`
 
-Invalidates stored claims and clears them from localStorage.
+Invalidates stored claims and clears them from localStorage. Redirects to Tranposit's logout page.
 
-**Returns**: Promise&lt;void&gt;
+| Argument    | Type   |                                                       |
+| :---------- | :----- | :---------------------------------------------------- |
+| redirectUri | String | where to end up after successful logout               |
+
+**Returns**: void
 
 ## Run operation
 
@@ -65,21 +69,21 @@ transposit.runOperation("source.users", { id: params.userId });
 // => { status: "ERROR", result: { exceptionLog: { message: "Failed to find user 123" } } }
 ```
 
-## Get connect location
+## Get settings uri
 
-`transposit.getConnectLocation([redirectUri=window.location.href])`
+`transposit.settingsUri([redirectUri=window.location.href])`
 
 | Argument                           | Type   |                                                       |
 | :--------------------------------- | :----- | :---------------------------------------------------- |
 | [redirectUri=window.location.href] | String | an optional param to specify an alternate redirectUri |
 
-**Returns** (String): A url to redirect to for user authorization.
+**Returns** (String): A url to redirect to for user settings.
 
 **Example**
 
 ```javascript
-transposit.getConnectLocation("localhost");
-// => "https://api.transposit.com/app/v1/gardener/hose/connect?redirectUri=localhost"
+transposit.settingsUri("https://localhost");
+// => "https://hello-world-xyz12.transposit.io?redirectUri=https%3A%2F%2Flocalhost"
 ```
 
 ## Get URI to start Google login
@@ -95,8 +99,8 @@ transposit.getConnectLocation("localhost");
 **Example**
 
 ```javascript
-transposit.getConnectLocation("localhost");
-// => "https://api.transposit.com/app/v1/gardener/hose/login/accounts?redirectUri=localhost"
+transposit.startLoginUri("https://localhost");
+// => "https://hello-world-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Flocalhost"
 ```
 
 ## Get user name
