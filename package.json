@@ -1,6 +1,6 @@
 {
   "name": "transposit",
-  "version": "0.7.8",
+  "version": "1.0.0-rc1",
   "author": "Transposit",
   "description": "SDK for web apps using Transposit as a backend",
   "keywords": [
