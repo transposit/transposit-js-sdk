@@ -263,10 +263,18 @@ describe("Transposit", () => {
       const transposit: Transposit = new Transposit(ARBYS_ORIGIN);
 
       expect(transposit.startLoginUri("https://altoids.com")).toEqual(
-        "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
+        "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com&provider=google",
       );
       expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
-        "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
+        "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com&provider=google",
+      );
+    });
+
+    it("returns the correct location", () => {
+      const transposit: Transposit = new Transposit(ARBYS_ORIGIN);
+
+      expect(transposit.startLoginUri("https://altoids.com", "slack")).toEqual(
+        "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com&provider=slack",
       );
     });
   });

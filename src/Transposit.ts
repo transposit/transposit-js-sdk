@@ -184,12 +184,11 @@ export class Transposit {
     );
   }
 
-  startLoginUri(redirectUri?: string): string {
-    return this.uri(
-      `/login/accounts?redirectUri=${encodeURIComponent(
-        redirectUri || window.location.href,
-      )}`,
-    );
+  startLoginUri(redirectUri?: string, provider?: "google" | "slack"): string {
+    const params = new URLSearchParams();
+    params.append("redirectUri", redirectUri || window.location.href);
+    params.append("provider", provider || "google");
+    return this.uri(`/login/accounts?${params.toString()}`);
   }
 
   // Deprecated in favor of settingsUri
@@ -199,7 +198,7 @@ export class Transposit {
 
   // Deprecated in favor of startLoginUri
   getGoogleLoginLocation(redirectUri?: string): string {
-    return this.startLoginUri(redirectUri);
+    return this.startLoginUri(redirectUri, "google");
   }
 
   // Deprecated
