@@ -88,12 +88,12 @@ transposit.settingsUri("https://localhost");
 
 ## Get URI to start login
 
-`transposit.startLoginUri([redirectUri=window.location.href], [provider="google"])`
+`transposit.startLoginUri([redirectUri=window.location.href], [provider])`
 
 | Argument                           | Type   |                                                       |
 | :--------------------------------- | :----- | :---------------------------------------------------- |
 | [redirectUri=window.location.href] | String | an optional param to specify an alternate redirectUri |
-| [provider="google"] | String | an optional param to specify a login provider |
+| [provider] | String | an optional param to specify a login provider |
 
 **Returns** (String): Location to start login.
 

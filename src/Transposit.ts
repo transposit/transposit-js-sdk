@@ -187,7 +187,9 @@ export class Transposit {
   startLoginUri(redirectUri?: string, provider?: "google" | "slack"): string {
     const params = new URLSearchParams();
     params.append("redirectUri", redirectUri || window.location.href);
-    params.append("provider", provider || "google");
+    if (provider) {
+      params.append("provider", provider);
+    }
     return this.uri(`/login/accounts?${params.toString()}`);
   }
 

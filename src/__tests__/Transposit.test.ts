@@ -259,10 +259,18 @@ describe("Transposit", () => {
   });
 
   describe("startLoginUri", () => {
-    it("returns the correct location", () => {
+    it("returns the correct default location", () => {
       const transposit: Transposit = new Transposit(ARBYS_ORIGIN);
 
       expect(transposit.startLoginUri("https://altoids.com")).toEqual(
+        "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
+      );
+    });
+
+    it("returns the correct google location", () => {
+      const transposit: Transposit = new Transposit(ARBYS_ORIGIN);
+
+      expect(transposit.startLoginUri("https://altoids.com", "google")).toEqual(
         "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com&provider=google",
       );
       expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
@@ -270,7 +278,7 @@ describe("Transposit", () => {
       );
     });
 
-    it("returns the correct location", () => {
+    it("returns the correct slack location", () => {
       const transposit: Transposit = new Transposit(ARBYS_ORIGIN);
 
       expect(transposit.startLoginUri("https://altoids.com", "slack")).toEqual(
