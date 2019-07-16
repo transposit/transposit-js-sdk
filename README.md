@@ -63,7 +63,7 @@ If your web app requires sign-in, implement these routes.
 
 ### `/signin`
 
-Create a page that displays a sign-in button. Use the SDK to begin Google sign-in when the button is clicked.
+Create a page that displays a sign-in button. Use the SDK to begin sign-in when the button is clicked.
 
 ```html
 <button type="button" onclick="signin()">Sign in</button>

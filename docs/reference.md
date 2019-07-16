@@ -6,7 +6,7 @@ The Transposit JavaScript SDK makes it simple to deal with sign-in, authenticati
 
 `transposit.handleLogin([callback])`
 
-Reads login information from the url and stores the claims object in localStorage for use in subsequent api calls. This is used after google login redirect. This function redirects the user to authenticate if they are missing credentials.
+Reads login information from the url and stores the claims object in localStorage for use in subsequent api calls. This is used after login redirect. This function redirects the user to authenticate if they are missing credentials.
 
 If a callback is provided, it will be called after successful login.
 
@@ -86,15 +86,16 @@ transposit.settingsUri("https://localhost");
 // => "https://hello-world-xyz12.transposit.io?redirectUri=https%3A%2F%2Flocalhost"
 ```
 
-## Get URI to start Google login
+## Get URI to start login
 
-`transposit.startLoginUri([redirectUri=window.location.href])`
+`transposit.startLoginUri([redirectUri=window.location.href], [provider])`
 
 | Argument                           | Type   |                                                       |
 | :--------------------------------- | :----- | :---------------------------------------------------- |
 | [redirectUri=window.location.href] | String | an optional param to specify an alternate redirectUri |
+| [provider] | String | an optional param to specify a login provider |
 
-**Returns** (String): A url to redirect to for google login.
+**Returns** (String): Location to start login.
 
 **Example**
 

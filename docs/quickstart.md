@@ -58,16 +58,16 @@ var transposit = new Transposit.Transposit("https://hello-world-xyz12.transposit
 Once you've configured login for your application, add a link to start the login process:
 
 ```
-<button type="button" onclick="loginWithGoogle()">Login</button>
+<button type="button" onclick="startLogin()">Login</button>
 
-function loginWithGoogle() {
+function startLogin() {
   window.location.href =
   transposit.startLoginUri(window.location.origin +
   window.location.pathname);
 }
 ```
 
-This kicks off the login flow with Transposit and Google. The provided URL tells Transposit where to send the user after a successful login. This is where the SDK comes into the picture. On the page that the user has been redirected to, simply call:
+This kicks off the login flow with Transposit. The provided URL tells Transposit where to send the user after a successful login. This is where the SDK comes into the picture. On the page that the user has been redirected to, simply call:
 
 ```javascript
 transposit.handleLogin();
