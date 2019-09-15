@@ -15,22 +15,23 @@
  */
 
 import { EndRequestLog } from ".";
-
-export interface Token {
-  access_token: string;
-  needs_keys: boolean;
-  user: { name: string; email: string };
-}
-
-export interface Claims {
-  iss: string; // issuer
-  sub: string; // subject
-  exp: number; // expiration
-  iat: number; // issuedAt
-}
+import { popCodeVerifier, pushCodeVerifier } from "./pkce-helper";
+import {
+  clearPersistedData,
+  loadAccessToken,
+  loadUser,
+  persistAccessToken,
+  persistUser,
+  TokenResponse,
+  User,
+} from "./token";
 
 export interface OperationParameters {
   [paramName: string]: string;
+}
+
+function chompSlash(string: string) {
+  return string.replace(/\/$/, "");
 }
 
 // https://my-app.transposit.io?clientJwt=...needKeys=... -> https://my-app.transposit.io
@@ -46,78 +47,75 @@ function formUrlEncode(data: { [key: string]: string }): string {
     .join("&");
 }
 
-function extractClaims(bearerToken: string): Claims {
-  return JSON.parse(atob(bearerToken.split(".")[1]));
-}
-
-function isBearerTokenValid(claims: Claims): boolean {
-  const expiration = claims.exp * 1000;
-  const now = Date.now();
-  return expiration > now;
-}
-
-export const LOCAL_STORAGE_KEY = "TRANSPOSIT_SESSION";
-export const PKCE_KEY = "TRANPOSIT_PKCE";
+export const SESSION_KEY = "TRANSPOSIT_SESSION";
+export const USER_KEY = "TRANSPOSIT_USER";
 
 export class Transposit {
-  private claims: Claims | null = null;
+  private hostedAppOrigin: string;
+  private accessToken: string | null;
+  private user: User | null;
 
-  constructor(private hostedAppOrigin: string = "") {
-    this.claims = this.loadClaims();
+  constructor(hostedAppOrigin: string = "") {
+    this.hostedAppOrigin = chompSlash(hostedAppOrigin);
+    this.accessToken = null;
+    this.user = null;
+
+    this.load();
   }
 
   private uri(path: string = ""): string {
     return `${this.hostedAppOrigin}${path}`;
   }
 
-  private loadClaims(): Claims | null {
-    const claimsJSON = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!claimsJSON) {
-      return null;
-    }
-
-    let claims: Claims;
-    try {
-      claims = JSON.parse(claimsJSON);
-    } catch (err) {
-      return null;
-    }
-
-    if (!this.checkClaimsValid(claims)) {
-      return null;
-    }
-
-    return claims;
+  private load(): void {
+    this.accessToken = loadAccessToken();
+    // todo this seems pretty unsafe from a security perspective
+    this.user = loadUser();
   }
 
-  private persistClaims(claimsJSON: string): void {
-    localStorage.setItem(LOCAL_STORAGE_KEY, claimsJSON);
-  }
-
-  private clearClaims(): void {
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
-  }
-
-  private checkClaimsValid(claims: Claims): boolean {
-    const expiration = claims.exp * 1000;
-    const now = Date.now();
-    return expiration > now;
-  }
-
-  private assertLoggedIn(): void {
-    if (this.claims === null) {
-      throw new Error("No client claims found.");
+  private assertSignedIn(): void {
+    if (this.accessToken === null || this.user === null) {
+      throw new Error("Missing accessToken or user. No one is signed in.");
     }
   }
 
-  isLoggedIn(): boolean {
-    return this.claims !== null;
+  isSignedIn(): boolean {
+    return this.accessToken !== null && this.user !== null;
+  }
+
+  async signIn(
+    redirectUri: string,
+    provider?: "google" | "slack",
+  ): Promise<void> {
+    // todo do we want this state?
+    // Create and store a random "state" value
+    // var state = generateRandomString();
+    // localStorage.setItem("pkce_state", state);
+
+    const codeChallenge = await pushCodeVerifier();
+
+    // Redirect to the authorization server
+    const params = new URLSearchParams();
+    params.append("scope", "openid"); // todo is this scope right?
+    params.append("response_type", "code");
+    params.append("client_id", "sdk"); // todo fix this server-side
+    params.append("redirect_uri", redirectUri);
+    params.append("code_challenge", codeChallenge);
+    params.append("code_challenge_method", "S256");
+    if (provider) {
+      params.append("provider", provider);
+    }
+    window.location.href = this.uri(`/login/accounts?${params.toString()}`);
   }
 
   // todo how should this callback work?
-  async handleLogin(
+  async handleSignIn(
     callback?: (info: { needsKeys: boolean }) => void,
   ): Promise<void> {
+    if (callback && typeof callback !== "function") {
+      throw new Error("Provided callback is not a function.");
+    }
+
     // Read query parameters
 
     // todo the Okta example is still using an anti-forgery token. Do I need that here too?
@@ -133,10 +131,7 @@ export class Transposit {
 
     // Exchange code for access_token
 
-    const codeVerifier = localStorage.getItem(PKCE_KEY);
-    if (codeVerifier === null) {
-      throw new Error("PKCE state could not be found.");
-    }
+    const codeVerifier = popCodeVerifier();
 
     // todo better handling for promise rejection here?
     const response = await fetch(this.uri(`/login/authorize/token`), {
@@ -157,28 +152,19 @@ export class Transposit {
       throw new Error("Exchange was unsuccessful");
     }
 
-    const token = (await response.json()) as Token;
+    const tokenResponse = (await response.json()) as TokenResponse;
 
-    const claims: Claims = extractClaims(token.access_token);
-    if (!isBearerTokenValid(claims)) {
-      throw new Error("access_token is expired.");
-    }
+    // Perform sign-in
 
-    // Persist claims. Login has succeeded.
-
-    this.claims = claims;
-    localStorage.setItem(LOCAL_STORAGE_KEY, token.access_token);
-    localStorage.setItem(LOCAL_STORAGE_KEY, token.access_token);
-
-    // Perform callback or default path replacement
+    persistAccessToken(tokenResponse.access_token);
+    persistUser(tokenResponse.user);
+    this.accessToken = tokenResponse.access_token;
+    this.user = tokenResponse.user;
 
     if (callback) {
-      if (typeof callback !== "function") {
-        throw new Error("Provided callback is not a function.");
-      }
-      callback({ needsKeys: token.needs_keys });
+      callback({ needsKeys: tokenResponse.needs_keys });
     } else {
-      if (token.needs_keys) {
+      if (tokenResponse.needs_keys) {
         window.location.href = this.settingsUri(hereWithoutSearch());
       } else {
         window.history.replaceState(
@@ -190,9 +176,10 @@ export class Transposit {
     }
   }
 
-  logOut(redirectUri: string): void {
-    this.clearClaims();
-    this.claims = null;
+  signOut(redirectUri: string): void {
+    this.accessToken = null;
+    this.user = null;
+    clearPersistedData();
 
     window.location.href = this.uri(
       `/logout?redirectUri=${encodeURIComponent(redirectUri)}`,
@@ -207,57 +194,27 @@ export class Transposit {
     );
   }
 
-  startLoginUri(redirectUri?: string, provider?: "google" | "slack"): string {
-    const params = new URLSearchParams();
-    params.append("redirectUri", redirectUri || window.location.href);
-    if (provider) {
-      params.append("provider", provider);
-    }
-    return this.uri(`/login/accounts?${params.toString()}`);
+  getUser(): User {
+    this.assertSignedIn();
+    return this.user!;
   }
 
-  // Deprecated in favor of settingsUri
-  getConnectLocation(redirectUri?: string): string {
-    return this.settingsUri(redirectUri);
-  }
-
-  // Deprecated in favor of startLoginUri
-  getGoogleLoginLocation(redirectUri?: string): string {
-    return this.startLoginUri(redirectUri, "google");
-  }
-
-  // Deprecated
-  getLoginLocation(): string {
-    return this.uri("/login");
-  }
-
-  getUserEmail(): string | null {
-    this.assertLoggedIn();
-    return this.claims!.email;
-  }
-
-  getUserName(): string | null {
-    this.assertLoggedIn();
-    return this.claims!.name;
-  }
-
-  async runOperation(
+  async run(
     operationId: string,
-    params: OperationParameters = {},
+    parameters: OperationParameters = {},
   ): Promise<EndRequestLog> {
     const headers: HeadersInit = {
       "Content-Type": "application/json",
     };
-    if (this.claims) {
-      headers["X-PUBLIC-TOKEN"] = this.claims.publicToken;
+    if (this.accessToken) {
+      headers.Authentication = `Bearer ${this.accessToken}`;
     }
 
     const response = await fetch(this.uri(`/api/v1/execute/${operationId}`), {
-      credentials: "include",
       method: "POST",
       headers,
       body: JSON.stringify({
-        parameters: params,
+        parameters,
       }),
     });
 

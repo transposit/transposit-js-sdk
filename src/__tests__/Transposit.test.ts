@@ -70,15 +70,15 @@ describe("Transposit", () => {
       );
 
       const transposit: Transposit = new Transposit();
-      transposit.handleLogin();
+      transposit.handleSignIn();
 
-      expect(transposit.isLoggedIn()).toBe(true);
+      expect(transposit.isSignedIn()).toBe(true);
     });
 
     it("knows when you're logged out", () => {
       const transposit: Transposit = new Transposit();
 
-      expect(transposit.isLoggedIn()).toBe(false);
+      expect(transposit.isSignedIn()).toBe(false);
     });
 
     it("knows when your session expired", () => {
@@ -89,13 +89,13 @@ describe("Transposit", () => {
       );
 
       let transposit: Transposit = new Transposit();
-      transposit.handleLogin();
+      transposit.handleSignIn();
 
       // 3 days after expiration
       MockDate.set((jplaceArbysClaims.exp + 60 * 60 * 24 * 3) * 1000);
       transposit = new Transposit();
 
-      expect(transposit.isLoggedIn()).toBe(false);
+      expect(transposit.isSignedIn()).toBe(false);
     });
   });
 
@@ -108,7 +108,7 @@ describe("Transposit", () => {
       );
 
       const transposit: Transposit = new Transposit();
-      transposit.handleLogin();
+      transposit.handleSignIn();
 
       expect(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)!)).toEqual(
         jplaceArbysClaims,
@@ -124,7 +124,7 @@ describe("Transposit", () => {
       setHref(ARBYS_ORIGIN, "/", `?clientJwt=${jplaceArbysJwt}&needsKeys=true`);
 
       const transposit: Transposit = new Transposit();
-      transposit.handleLogin();
+      transposit.handleSignIn();
 
       expect(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)!)).toEqual(
         jplaceArbysClaims,
@@ -140,7 +140,7 @@ describe("Transposit", () => {
       const mockCallback = jest.fn();
 
       const transposit: Transposit = new Transposit();
-      transposit.handleLogin(mockCallback);
+      transposit.handleSignIn(mockCallback);
 
       expect(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)!)).toEqual(
         jplaceArbysClaims,
@@ -154,7 +154,7 @@ describe("Transposit", () => {
 
       const transposit: Transposit = new Transposit();
       try {
-        transposit.handleLogin("string" as any);
+        transposit.handleSignIn("string" as any);
         done.fail();
       } catch (err) {
         expect(err.message).toContain("Provided callback is not a function.");
@@ -167,7 +167,7 @@ describe("Transposit", () => {
 
       const transposit: Transposit = new Transposit();
       try {
-        transposit.handleLogin();
+        transposit.handleSignIn();
         done.fail();
       } catch (err) {
         expect(err.message).toContain(
@@ -182,7 +182,7 @@ describe("Transposit", () => {
 
       const transposit: Transposit = new Transposit();
       try {
-        transposit.handleLogin();
+        transposit.handleSignIn();
         done.fail();
       } catch (err) {
         expect(err.message).toContain(
@@ -197,7 +197,7 @@ describe("Transposit", () => {
 
       const transposit: Transposit = new Transposit();
       try {
-        transposit.handleLogin();
+        transposit.handleSignIn();
         done.fail();
       } catch (err) {
         expect(err.message).toContain(
@@ -244,14 +244,14 @@ describe("Transposit", () => {
         `?clientJwt=${jplaceArbysJwt}&needsKeys=false`,
       );
       transposit = new Transposit();
-      transposit.handleLogin();
+      transposit.handleSignIn();
     });
 
     it("handles successful logout", () => {
-      transposit.logOut(arbysUri("/login"));
+      transposit.signOut(arbysUri("/login"));
 
       expect(localStorage.getItem(LOCAL_STORAGE_KEY)).toBeNull();
-      expect(transposit.isLoggedIn()).toBe(false);
+      expect(transposit.isSignedIn()).toBe(false);
       expect(window.location.href).toEqual(
         "/logout?redirectUri=https%3A%2F%2Farbys-beef-xyz12.transposit.io%2Flogin",
       );
@@ -262,7 +262,7 @@ describe("Transposit", () => {
     it("returns the correct default location", () => {
       const transposit: Transposit = new Transposit(ARBYS_ORIGIN);
 
-      expect(transposit.startLoginUri("https://altoids.com")).toEqual(
+      expect(transposit.startSignInUri("https://altoids.com")).toEqual(
         "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
       );
     });
@@ -270,7 +270,9 @@ describe("Transposit", () => {
     it("returns the correct google location", () => {
       const transposit: Transposit = new Transposit(ARBYS_ORIGIN);
 
-      expect(transposit.startLoginUri("https://altoids.com", "google")).toEqual(
+      expect(
+        transposit.startSignInUri("https://altoids.com", "google"),
+      ).toEqual(
         "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com&provider=google",
       );
       expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
@@ -281,7 +283,7 @@ describe("Transposit", () => {
     it("returns the correct slack location", () => {
       const transposit: Transposit = new Transposit(ARBYS_ORIGIN);
 
-      expect(transposit.startLoginUri("https://altoids.com", "slack")).toEqual(
+      expect(transposit.startSignInUri("https://altoids.com", "slack")).toEqual(
         "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com&provider=slack",
       );
     });
