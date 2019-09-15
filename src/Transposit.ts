@@ -16,15 +16,17 @@
 
 import { EndRequestLog } from ".";
 
-export interface ClientClaims {
+export interface Token {
+  access_token: string;
+  needs_keys: boolean;
+  user: { name: string; email: string };
+}
+
+export interface Claims {
   iss: string; // issuer
   sub: string; // subject
   exp: number; // expiration
   iat: number; // issuedAt
-  publicToken: string;
-  repository: string;
-  email: string;
-  name: string;
 }
 
 export interface OperationParameters {
@@ -36,10 +38,29 @@ function hereWithoutSearch(): string {
   return `${window.location.origin}${window.location.pathname}`;
 }
 
+function formUrlEncode(data: { [key: string]: string }): string {
+  return Object.keys(data)
+    .map(key => {
+      return encodeURIComponent(key) + "=" + encodeURIComponent(data[key]);
+    })
+    .join("&");
+}
+
+function extractClaims(bearerToken: string): Claims {
+  return JSON.parse(atob(bearerToken.split(".")[1]));
+}
+
+function isBearerTokenValid(claims: Claims): boolean {
+  const expiration = claims.exp * 1000;
+  const now = Date.now();
+  return expiration > now;
+}
+
 export const LOCAL_STORAGE_KEY = "TRANSPOSIT_SESSION";
+export const PKCE_KEY = "TRANPOSIT_PKCE";
 
 export class Transposit {
-  private claims: ClientClaims | null = null;
+  private claims: Claims | null = null;
 
   constructor(private hostedAppOrigin: string = "") {
     this.claims = this.loadClaims();
@@ -49,13 +70,13 @@ export class Transposit {
     return `${this.hostedAppOrigin}${path}`;
   }
 
-  private loadClaims(): ClientClaims | null {
+  private loadClaims(): Claims | null {
     const claimsJSON = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!claimsJSON) {
       return null;
     }
 
-    let claims: ClientClaims;
+    let claims: Claims;
     try {
       claims = JSON.parse(claimsJSON);
     } catch (err) {
@@ -77,7 +98,7 @@ export class Transposit {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
   }
 
-  private checkClaimsValid(claims: ClientClaims): boolean {
+  private checkClaimsValid(claims: Claims): boolean {
     const expiration = claims.exp * 1000;
     const now = Date.now();
     return expiration > now;
@@ -93,59 +114,61 @@ export class Transposit {
     return this.claims !== null;
   }
 
-  handleLogin(callback?: (info: { needsKeys: boolean }) => void): void {
+  // todo how should this callback work?
+  async handleLogin(
+    callback?: (info: { needsKeys: boolean }) => void,
+  ): Promise<void> {
     // Read query parameters
+
+    // todo the Okta example is still using an anti-forgery token. Do I need that here too?
 
     const searchParams = new URLSearchParams(window.location.search);
 
-    if (!searchParams.has("clientJwt")) {
+    if (!searchParams.has("code")) {
       throw new Error(
-        "clientJwt query parameter could not be found. This method should only be called after redirection during login.",
+        "code query parameter could not be found. This method should only be called after redirection during sign-in.",
       );
     }
-    const clientJwtString = searchParams.get("clientJwt")!;
+    const code = searchParams.get("code")!;
 
-    if (!searchParams.has("needsKeys")) {
-      throw new Error(
-        "needsKeys query parameter could not be found. This is unexpected.",
-      );
-    }
-    const needsKeys = searchParams.get("needsKeys")! === "true";
+    // Exchange code for access_token
 
-    // Parse JWT string
+    const codeVerifier = localStorage.getItem(PKCE_KEY);
+    if (codeVerifier === null) {
+      throw new Error("PKCE state could not be found.");
+    }
 
-    const jwtParts: string[] = clientJwtString.split(".");
-    if (jwtParts.length !== 3) {
-      throw new Error(
-        "clientJwt query parameter does not appear to be a valid JWT string. This method should only be called after redirection during login.",
-      );
+    // todo better handling for promise rejection here?
+    const response = await fetch(this.uri(`/login/authorize/token`), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: formUrlEncode({
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: hereWithoutSearch(),
+        code_verifier: codeVerifier,
+      }),
+    });
+
+    // todo some better error handling than this
+    if (response.status !== 200) {
+      throw new Error("Exchange was unsuccessful");
     }
-    let claimsJSON: string;
-    try {
-      claimsJSON = atob(jwtParts[1]);
-    } catch (err) {
-      throw new Error(
-        "clientJwt query parameter does not appear to be a valid JWT string. This method should only be called after redirection during login.",
-      );
-    }
-    let claims: ClientClaims;
-    try {
-      claims = JSON.parse(claimsJSON);
-    } catch (err) {
-      throw new Error(
-        "clientJwt query parameter does not appear to be a valid JWT string. This method should only be called after redirection during login.",
-      );
-    }
-    if (!this.checkClaimsValid(claims)) {
-      throw new Error(
-        "clientJwt query parameter does not appear to be a valid JWT string. clientJwt is expired.",
-      );
+
+    const token = (await response.json()) as Token;
+
+    const claims: Claims = extractClaims(token.access_token);
+    if (!isBearerTokenValid(claims)) {
+      throw new Error("access_token is expired.");
     }
 
     // Persist claims. Login has succeeded.
 
     this.claims = claims;
-    this.persistClaims(claimsJSON);
+    localStorage.setItem(LOCAL_STORAGE_KEY, token.access_token);
+    localStorage.setItem(LOCAL_STORAGE_KEY, token.access_token);
 
     // Perform callback or default path replacement
 
@@ -153,9 +176,9 @@ export class Transposit {
       if (typeof callback !== "function") {
         throw new Error("Provided callback is not a function.");
       }
-      callback({ needsKeys });
+      callback({ needsKeys: token.needs_keys });
     } else {
-      if (needsKeys) {
+      if (token.needs_keys) {
         window.location.href = this.settingsUri(hereWithoutSearch());
       } else {
         window.history.replaceState(
