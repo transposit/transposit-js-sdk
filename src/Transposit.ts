@@ -100,12 +100,13 @@ export class Transposit {
     params.append("response_type", "code");
     params.append("client_id", "sdk"); // todo fix this server-side
     params.append("redirect_uri", redirectUri);
+    params.append("prompt", "login");
     params.append("code_challenge", codeChallenge);
     params.append("code_challenge_method", "S256");
     if (provider) {
       params.append("provider", provider);
     }
-    window.location.href = this.uri(`/login/accounts?${params.toString()}`);
+    window.location.href = this.uri(`/login/authorize?${params.toString()}`);
   }
 
   // todo how should this callback work?
@@ -207,7 +208,7 @@ export class Transposit {
       "Content-Type": "application/json",
     };
     if (this.accessToken) {
-      headers.Authentication = `Bearer ${this.accessToken}`;
+      headers.Authorization = `Bearer ${this.accessToken}`;
     }
 
     const response = await fetch(this.uri(`/api/v1/execute/${operationId}`), {
