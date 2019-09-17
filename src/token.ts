@@ -1,7 +1,18 @@
-/**
+/*
  * Copyright 2019 Transposit Corporation. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-// todo all files need the more extensive copyright
 
 export interface TokenResponse {
   access_token: string;
@@ -21,7 +32,7 @@ export interface User {
   email: string;
 }
 
-// todo does this need to match up with the connect page?
+// Ensure no conflict with settings page session
 const ACCESS_TOKEN_KEY = "TRANSPOSIT_ACCESS_TOKEN";
 const USER_KEY = "TRANSPOSIT_USER";
 
@@ -63,15 +74,25 @@ export function persistUser(user: User) {
 
 export function loadUser(): User | null {
   const maybeUser = localStorage.getItem(USER_KEY);
-  if (maybeUser) {
-    try {
-      // todo some form of validation here
-      return JSON.parse(maybeUser) as User;
-    } catch (e) {
-      // noop
-    }
+  if (!maybeUser) {
+    return null;
   }
-  return null;
+
+  let possiblyUser: any;
+  try {
+    possiblyUser = JSON.parse(maybeUser);
+  } catch (e) {
+    return null;
+  }
+
+  if (
+    typeof possiblyUser.name === "string" &&
+    typeof possiblyUser.email === "string"
+  ) {
+    return possiblyUser as User;
+  } else {
+    return null;
+  }
 }
 
 export function clearPersistedData() {

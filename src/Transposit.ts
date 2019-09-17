@@ -25,30 +25,7 @@ import {
   TokenResponse,
   User,
 } from "./token";
-
-export interface OperationParameters {
-  [paramName: string]: string;
-}
-
-function chompSlash(string: string) {
-  return string.replace(/\/$/, "");
-}
-
-// https://my-app.transposit.io?clientJwt=...needKeys=... -> https://my-app.transposit.io
-function hereWithoutSearch(): string {
-  return `${window.location.origin}${window.location.pathname}`;
-}
-
-function formUrlEncode(data: { [key: string]: string }): string {
-  return Object.keys(data)
-    .map(key => {
-      return encodeURIComponent(key) + "=" + encodeURIComponent(data[key]);
-    })
-    .join("&");
-}
-
-export const SESSION_KEY = "TRANSPOSIT_SESSION";
-export const USER_KEY = "TRANSPOSIT_USER";
+import { chompSlash, formUrlEncode, hereWithoutSearch } from "./util";
 
 export class Transposit {
   private hostedAppOrigin: string;
@@ -69,7 +46,6 @@ export class Transposit {
 
   private load(): void {
     this.accessToken = loadAccessToken();
-    // todo this seems pretty unsafe from a security perspective
     this.user = loadUser();
   }
 
@@ -87,18 +63,12 @@ export class Transposit {
     redirectUri: string,
     provider?: "google" | "slack",
   ): Promise<void> {
-    // todo do we want this state?
-    // Create and store a random "state" value
-    // var state = generateRandomString();
-    // localStorage.setItem("pkce_state", state);
-
     const codeChallenge = await pushCodeVerifier();
 
-    // Redirect to the authorization server
     const params = new URLSearchParams();
-    params.append("scope", "openid"); // todo is this scope right?
+    params.append("scope", "openid");
     params.append("response_type", "code");
-    params.append("client_id", "sdk"); // todo fix this server-side
+    params.append("client_id", "sdk");
     params.append("redirect_uri", redirectUri);
     params.append("prompt", "login");
     params.append("code_challenge", codeChallenge);
@@ -109,17 +79,14 @@ export class Transposit {
     window.location.href = this.uri(`/login/authorize?${params.toString()}`);
   }
 
-  // todo how should this callback work?
-  async handleSignIn(
-    callback?: (info: { needsKeys: boolean }) => void,
-  ): Promise<void> {
+  async handleSignIn(callback?: SignInCallback): Promise<void> {
+    // Check parameters are the right types
+
     if (callback && typeof callback !== "function") {
       throw new Error("Provided callback is not a function.");
     }
 
     // Read query parameters
-
-    // todo the Okta example is still using an anti-forgery token. Do I need that here too?
 
     const searchParams = new URLSearchParams(window.location.search);
 
@@ -134,7 +101,6 @@ export class Transposit {
 
     const codeVerifier = popCodeVerifier();
 
-    // todo better handling for promise rejection here?
     const response = await fetch(this.uri(`/login/authorize/token`), {
       method: "POST",
       headers: {
@@ -147,10 +113,8 @@ export class Transposit {
         code_verifier: codeVerifier,
       }),
     });
-
-    // todo some better error handling than this
-    if (response.status !== 200) {
-      throw new Error("Exchange was unsuccessful");
+    if (!response.ok) {
+      throw Error(response.statusText);
     }
 
     const tokenResponse = (await response.json()) as TokenResponse;
@@ -162,10 +126,12 @@ export class Transposit {
     this.accessToken = tokenResponse.access_token;
     this.user = tokenResponse.user;
 
+    const needsKeys: boolean = tokenResponse.needs_keys;
+
     if (callback) {
-      callback({ needsKeys: tokenResponse.needs_keys });
+      callback({ needsKeys });
     } else {
-      if (tokenResponse.needs_keys) {
+      if (needsKeys) {
         window.location.href = this.settingsUri(hereWithoutSearch());
       } else {
         window.history.replaceState(
@@ -226,3 +192,9 @@ export class Transposit {
     }
   }
 }
+
+export interface OperationParameters {
+  [paramName: string]: string;
+}
+
+export type SignInCallback = (info: { needsKeys: boolean }) => void;
