@@ -15,14 +15,14 @@
  */
 
 import { EndRequestLog } from ".";
-import { popCodeVerifier, pushCodeVerifier } from "./pkce-helper";
+import { popCodeVerifier, pushCodeVerifier } from "./signin/pkce-helper";
 import {
   clearPersistedData,
   loadAccessToken,
   persistAccessToken,
   TokenResponse,
   User,
-} from "./token";
+} from "./signin/token";
 import { chompSlash, formUrlEncode, hereWithoutSearch } from "./util";
 
 export class Transposit {
@@ -61,7 +61,7 @@ export class Transposit {
     const codeChallenge = await pushCodeVerifier();
 
     const params = new URLSearchParams();
-    params.append("scope", "openid");
+    params.append("scope", "openid app");
     params.append("response_type", "code");
     params.append("client_id", "sdk");
     params.append("redirect_uri", redirectUri);
@@ -74,13 +74,7 @@ export class Transposit {
     window.location.href = this.uri(`/login/authorize?${params.toString()}`);
   }
 
-  async handleSignIn(callback?: SignInCallback): Promise<void> {
-    // Check parameters are the right types
-
-    if (callback && typeof callback !== "function") {
-      throw new Error("Provided callback is not a function.");
-    }
-
+  async handleSignIn(): Promise<SignInSuccess> {
     // Read query parameters
 
     const searchParams = new URLSearchParams(window.location.search);
@@ -111,7 +105,6 @@ export class Transposit {
     if (!response.ok) {
       throw Error(response.statusText);
     }
-
     const tokenResponse = (await response.json()) as TokenResponse;
 
     // Perform sign-in
@@ -119,21 +112,9 @@ export class Transposit {
     persistAccessToken(tokenResponse.access_token);
     this.accessToken = tokenResponse.access_token;
 
-    const needsKeys: boolean = tokenResponse.needs_keys;
+    // Return to indicate sign-in success
 
-    if (callback) {
-      callback({ needsKeys });
-    } else {
-      if (needsKeys) {
-        window.location.href = this.settingsUri(hereWithoutSearch());
-      } else {
-        window.history.replaceState(
-          {},
-          document.title,
-          window.location.pathname,
-        );
-      }
-    }
+    return { needsKeys: tokenResponse.needs_keys };
   }
 
   signOut(redirectUri: string): void {
@@ -185,8 +166,10 @@ export class Transposit {
   }
 }
 
+export interface SignInSuccess {
+  needsKeys: boolean;
+}
+
 export interface OperationParameters {
   [paramName: string]: string;
 }
-
-export type SignInCallback = (info: { needsKeys: boolean }) => void;
