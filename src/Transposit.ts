@@ -19,9 +19,7 @@ import { popCodeVerifier, pushCodeVerifier } from "./pkce-helper";
 import {
   clearPersistedData,
   loadAccessToken,
-  loadUser,
   persistAccessToken,
-  persistUser,
   TokenResponse,
   User,
 } from "./token";
@@ -30,12 +28,10 @@ import { chompSlash, formUrlEncode, hereWithoutSearch } from "./util";
 export class Transposit {
   private hostedAppOrigin: string;
   private accessToken: string | null;
-  private user: User | null;
 
   constructor(hostedAppOrigin: string = "") {
     this.hostedAppOrigin = chompSlash(hostedAppOrigin);
     this.accessToken = null;
-    this.user = null;
 
     this.load();
   }
@@ -46,17 +42,16 @@ export class Transposit {
 
   private load(): void {
     this.accessToken = loadAccessToken();
-    this.user = loadUser();
   }
 
   private assertSignedIn(): void {
-    if (this.accessToken === null || this.user === null) {
+    if (this.accessToken === null) {
       throw new Error("Missing accessToken or user. No one is signed in.");
     }
   }
 
   isSignedIn(): boolean {
-    return this.accessToken !== null && this.user !== null;
+    return this.accessToken !== null;
   }
 
   async signIn(
@@ -122,9 +117,7 @@ export class Transposit {
     // Perform sign-in
 
     persistAccessToken(tokenResponse.access_token);
-    persistUser(tokenResponse.user);
     this.accessToken = tokenResponse.access_token;
-    this.user = tokenResponse.user;
 
     const needsKeys: boolean = tokenResponse.needs_keys;
 
@@ -145,7 +138,6 @@ export class Transposit {
 
   signOut(redirectUri: string): void {
     this.accessToken = null;
-    this.user = null;
     clearPersistedData();
 
     window.location.href = this.uri(
@@ -163,7 +155,7 @@ export class Transposit {
 
   getUser(): User {
     this.assertSignedIn();
-    return this.user!;
+    throw Error("NYI");
   }
 
   async run(

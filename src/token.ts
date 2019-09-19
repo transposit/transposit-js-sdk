@@ -19,6 +19,10 @@ export interface TokenResponse {
   needs_keys: boolean;
   user: User;
 }
+export interface User {
+  name: string;
+  email: string;
+}
 
 export interface Claims {
   iss: string; // issuer
@@ -27,14 +31,8 @@ export interface Claims {
   iat: number; // issuedAt
 }
 
-export interface User {
-  name: string;
-  email: string;
-}
-
 // Ensure no conflict with settings page session
 const ACCESS_TOKEN_KEY = "TRANSPOSIT_ACCESS_TOKEN";
-const USER_KEY = "TRANSPOSIT_USER";
 
 function extractClaims(accessToken: string): Claims {
   return JSON.parse(atob(accessToken.split(".")[1]));
@@ -68,34 +66,6 @@ export function loadAccessToken(): string | null {
   return null;
 }
 
-export function persistUser(user: User) {
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
-}
-
-export function loadUser(): User | null {
-  const maybeUser = localStorage.getItem(USER_KEY);
-  if (!maybeUser) {
-    return null;
-  }
-
-  let possiblyUser: any;
-  try {
-    possiblyUser = JSON.parse(maybeUser);
-  } catch (e) {
-    return null;
-  }
-
-  if (
-    typeof possiblyUser.name === "string" &&
-    typeof possiblyUser.email === "string"
-  ) {
-    return possiblyUser as User;
-  } else {
-    return null;
-  }
-}
-
 export function clearPersistedData() {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
 }
