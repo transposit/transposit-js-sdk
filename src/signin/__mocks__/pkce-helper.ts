@@ -18,8 +18,6 @@
  * limitations under the License.
  */
 
-// This code inspired by: https://developer.okta.com/blog/2019/05/01/is-the-oauth-implicit-flow-dead
-
 export async function pushCodeVerifier(): Promise<string> {
   return "challenge-from-code-verifier";
 }

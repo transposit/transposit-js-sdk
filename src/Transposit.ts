@@ -23,7 +23,7 @@ import {
   TokenResponse,
   User,
 } from "./signin/token";
-import { chompSlash, formUrlEncode, hereWithoutSearch } from "./util";
+import { chompSlash, formUrlEncode, hereWithoutSearch } from "./utils";
 
 export class Transposit {
   private hostedAppOrigin: string;

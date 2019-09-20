@@ -22,8 +22,9 @@ import {
   persistAccessToken,
   TokenResponse,
 } from "../signin/token";
-import DoneCallback = jest.DoneCallback;
+import { setHref } from "../test/test-utils";
 import { SignInSuccess, Transposit } from "../Transposit";
+jest.mock("../signin/pkce-helper");
 
 const BACKEND_ORIGIN: string = "https://arbys-beef-xyz12.transposit.io";
 function backendUri(path: string = ""): string {
@@ -34,11 +35,6 @@ function frontendUri(path: string = ""): string {
   return `${FRONTEND_ORIGIN}${path}`;
 }
 
-jest.mock("../signin/pkce-helper", () => ({
-  pushCodeVerifier: () => "challenge-from-code-verifier",
-  popCodeVerifier: () => "code-verifier",
-}));
-
 const NOW_MINUS_3_DAYS: number = 1521996119000;
 const NOW: number = 1522255319000;
 const NOW_PLUS_3_DAYS: number = 1522514519000;
@@ -47,13 +43,6 @@ function createUnsignedJwt(claims: Claims): string {
   const header: string = btoa(JSON.stringify({ alg: "none" }));
   const body: string = btoa(JSON.stringify(claims));
   return `${header}.${body}.`;
-}
-
-function setHref(origin: string, pathname: string, search: string): void {
-  window.location.href = `${origin}${pathname}${search}`;
-  (window.location as any).origin = origin; // origin is normally read-only, but not in tests :)
-  window.location.pathname = pathname;
-  window.location.search = search;
 }
 
 function makeSignedIn(accessToken: string) {
