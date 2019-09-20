@@ -21,7 +21,6 @@ import {
   loadAccessToken,
   persistAccessToken,
   TokenResponse,
-  User,
 } from "./signin/token";
 import { chompSlash, formUrlEncode, hereWithoutSearch } from "./utils";
 
@@ -42,12 +41,6 @@ export class Transposit {
 
   private load(): void {
     this.accessToken = loadAccessToken();
-  }
-
-  private assertSignedIn(): void {
-    if (this.accessToken === null) {
-      throw new Error("Missing accessToken or user. No one is signed in.");
-    }
   }
 
   isSignedIn(): boolean {
@@ -132,11 +125,6 @@ export class Transposit {
         redirectUri || window.location.href,
       )}`,
     );
-  }
-
-  getUser(): User {
-    this.assertSignedIn();
-    throw Error("NYI");
   }
 
   async run(

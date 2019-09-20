@@ -1,7 +1,3 @@
-/**
- * Copyright 2019 Transposit Corporation. All Rights Reserved.
- */
-
 /*
  * Copyright 2019 Transposit Corporation. All Rights Reserved.
  *

@@ -308,46 +308,4 @@ describe("Transposit", () => {
       expect(e.statusText).toEqual("Bad Request");
     }
   });
-
-  //   function testInvalidJwt(done: DoneCallback, invalidJwt: string) {
-  //     setHref(ARBYS_ORIGIN, "/", `?clientJwt=${invalidJwt}&needsKeys=false`);
-
-  //     const transposit: Transposit = new Transposit();
-  //     try {
-  //       transposit.handleSignIn();
-  //       done.fail();
-  //     } catch (err) {
-  //       expect(err.message).toContain(
-  //         "clientJwt query parameter does not appear to be a valid JWT string",
-  //       );
-  //       done();
-  //     }
-  //   }
-
-  //   it("throws with invalid jwt (empty)", (done: DoneCallback) => {
-  //     testInvalidJwt(done, "");
-  //   });
-
-  //   it("throws with invalid jwt (not-properly formatted jwt)", (done: DoneCallback) => {
-  //     testInvalidJwt(done, "adsfasfdfd.fdsafadfsf");
-  //   });
-
-  //   it("throws with invalid jwt (not-base64 jwt)", (done: DoneCallback) => {
-  //     testInvalidJwt(done, "dffgdf--6667.fdsaf#f.");
-  //   });
-
-  //   it("throws with invalid jwt (not-json jwt)", (done: DoneCallback) => {
-  //     testInvalidJwt(
-  //       done,
-  //       `${btoa("{ not-=json: yeeeee")}.${btoa("{ not-=json: yeeeee")}.`,
-  //     );
-  //   });
-
-  //   it("throws with invalid jwt (expired)", (done: DoneCallback) => {
-  //     const expiredClaims = Object.assign({}, jplaceArbysClaims, {
-  //       exp: NOW_MINUS_3_DAYS / 1000,
-  //     });
-  //     testInvalidJwt(done, createUnsignedJwt(expiredClaims));
-  //   });
-  // });
 });
