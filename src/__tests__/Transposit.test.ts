@@ -15,30 +15,34 @@
  */
 
 import * as MockDate from "mockdate";
-import { ClientClaims, LOCAL_STORAGE_KEY, Transposit } from "../Transposit";
-import DoneCallback = jest.DoneCallback;
+import { EndRequestLog } from "../EndRequestLog";
+import {
+  Claims,
+  loadAccessToken,
+  persistAccessToken,
+  TokenResponse,
+} from "../signin/token";
+import {
+  createUnsignedJwt,
+  NOW,
+  NOW_MINUS_3_DAYS,
+  NOW_PLUS_3_DAYS,
+  setHref,
+} from "../test/test-utils";
+import { SignInSuccess, Transposit } from "../Transposit";
+jest.mock("../signin/pkce-helper");
 
-const ARBYS_ORIGIN: string = "https://arbys-beef-xyz12.transposit.io";
-
-function arbysUri(path: string = ""): string {
-  return `${ARBYS_ORIGIN}${path}`;
+const BACKEND_ORIGIN: string = "https://arbys-beef-xyz12.transposit.io";
+function backendUri(path: string = ""): string {
+  return `${BACKEND_ORIGIN}${path}`;
+}
+const FRONTEND_ORIGIN: string = "https://arbys-beef.com";
+function frontendUri(path: string = ""): string {
+  return `${FRONTEND_ORIGIN}${path}`;
 }
 
-const NOW_MINUS_3_DAYS: number = 1521996119000;
-const NOW: number = 1522255319000;
-const NOW_PLUS_3_DAYS: number = 1522514519000;
-
-function createUnsignedJwt(claims: ClientClaims): string {
-  const header: string = btoa(JSON.stringify({ alg: "none" }));
-  const body: string = btoa(JSON.stringify(claims));
-  return `${header}.${body}.`;
-}
-
-function setHref(origin: string, pathname: string, search: string): void {
-  window.location.href = `${origin}${pathname}${search}`;
-  (window.location as any).origin = origin; // origin is normally read-only, but not in tests :)
-  window.location.pathname = pathname;
-  window.location.search = search;
+function makeSignedIn(accessToken: string) {
+  persistAccessToken(accessToken);
 }
 
 describe("Transposit", () => {
@@ -46,244 +50,262 @@ describe("Transposit", () => {
     jest.clearAllMocks();
     localStorage.clear();
     MockDate.set(NOW);
-    setHref(ARBYS_ORIGIN, "/", "");
+    setHref(FRONTEND_ORIGIN, "/", "");
   });
 
-  const jplaceArbysClaims: ClientClaims = Object.freeze({
-    iss: ARBYS_ORIGIN,
+  const claims: Claims = Object.freeze({
+    iss: BACKEND_ORIGIN,
     sub: "jplace@transposit.com",
     exp: NOW_PLUS_3_DAYS / 1000,
     iat: NOW_MINUS_3_DAYS / 1000,
-    publicToken: "thisisapublictoken",
-    repository: "jplace/arbys_beef",
-    email: "jplace@transposit.com",
-    name: "Jordan 'The Beef' Place",
   });
-  const jplaceArbysJwt: string = createUnsignedJwt(jplaceArbysClaims);
+  const accessToken: string = createUnsignedJwt(claims);
 
-  describe("isLoggedIn", () => {
-    it("knows when you've just logged in", () => {
-      setHref(
-        ARBYS_ORIGIN,
-        "/",
-        `?clientJwt=${jplaceArbysJwt}&needsKeys=false`,
-      );
+  it("signs in", async () => {
+    expect.assertions(5);
 
-      const transposit: Transposit = new Transposit();
-      transposit.handleLogin();
-
-      expect(transposit.isLoggedIn()).toBe(true);
-    });
-
-    it("knows when you're logged out", () => {
-      const transposit: Transposit = new Transposit();
-
-      expect(transposit.isLoggedIn()).toBe(false);
-    });
-
-    it("knows when your session expired", () => {
-      setHref(
-        ARBYS_ORIGIN,
-        "/",
-        `?clientJwt=${jplaceArbysJwt}&needsKeys=false`,
-      );
-
-      let transposit: Transposit = new Transposit();
-      transposit.handleLogin();
-
-      // 3 days after expiration
-      MockDate.set((jplaceArbysClaims.exp + 60 * 60 * 24 * 3) * 1000);
-      transposit = new Transposit();
-
-      expect(transposit.isLoggedIn()).toBe(false);
-    });
-  });
-
-  describe("handleLogin", () => {
-    it("calls replaceState", () => {
-      setHref(
-        ARBYS_ORIGIN,
-        "/",
-        `?clientJwt=${jplaceArbysJwt}&needsKeys=false`,
-      );
-
-      const transposit: Transposit = new Transposit();
-      transposit.handleLogin();
-
-      expect(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)!)).toEqual(
-        jplaceArbysClaims,
-      );
-      expect(window.history.replaceState).toHaveBeenCalledWith(
-        {},
-        window.document.title,
-        "/",
-      );
-    });
-
-    it("redirects when needs keys", () => {
-      setHref(ARBYS_ORIGIN, "/", `?clientJwt=${jplaceArbysJwt}&needsKeys=true`);
-
-      const transposit: Transposit = new Transposit();
-      transposit.handleLogin();
-
-      expect(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)!)).toEqual(
-        jplaceArbysClaims,
-      );
+    {
+      const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+      await transposit.signIn(frontendUri("/handle-signin"));
       expect(window.location.href).toEqual(
-        "/settings?redirectUri=https%3A%2F%2Farbys-beef-xyz12.transposit.io%2F",
+        backendUri(
+          "/login/authorize?scope=openid+app&response_type=code&client_id=sdk&redirect_uri=https%3A%2F%2Farbys-beef.com%2Fhandle-signin&prompt=login&code_challenge=challenge-from-code-verifier&code_challenge_method=S256",
+        ),
       );
-    });
-
-    it("calls callback", () => {
-      setHref(ARBYS_ORIGIN, "/", `?clientJwt=${jplaceArbysJwt}&needsKeys=true`);
-
-      const mockCallback = jest.fn();
-
-      const transposit: Transposit = new Transposit();
-      transposit.handleLogin(mockCallback);
-
-      expect(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)!)).toEqual(
-        jplaceArbysClaims,
-      );
-      expect(mockCallback).toHaveBeenCalledWith({ needsKeys: true });
-      expect(window.history.replaceState).not.toHaveBeenCalled();
-    });
-
-    it("throws if callback is not a function", (done: DoneCallback) => {
-      setHref(ARBYS_ORIGIN, "/", `?clientJwt=${jplaceArbysJwt}&needsKeys=true`);
-
-      const transposit: Transposit = new Transposit();
-      try {
-        transposit.handleLogin("string" as any);
-        done.fail();
-      } catch (err) {
-        expect(err.message).toContain("Provided callback is not a function.");
-        done();
-      }
-    });
-
-    it("throws without jwt", (done: DoneCallback) => {
-      setHref(ARBYS_ORIGIN, "/", "");
-
-      const transposit: Transposit = new Transposit();
-      try {
-        transposit.handleLogin();
-        done.fail();
-      } catch (err) {
-        expect(err.message).toContain(
-          "clientJwt query parameter could not be found",
-        );
-        done();
-      }
-    });
-
-    it("throws without needsKeys", (done: DoneCallback) => {
-      setHref(ARBYS_ORIGIN, "/", `?clientJwt=${jplaceArbysJwt}`);
-
-      const transposit: Transposit = new Transposit();
-      try {
-        transposit.handleLogin();
-        done.fail();
-      } catch (err) {
-        expect(err.message).toContain(
-          "needsKeys query parameter could not be found. This is unexpected.",
-        );
-        done();
-      }
-    });
-
-    function testInvalidJwt(done: DoneCallback, invalidJwt: string) {
-      setHref(ARBYS_ORIGIN, "/", `?clientJwt=${invalidJwt}&needsKeys=false`);
-
-      const transposit: Transposit = new Transposit();
-      try {
-        transposit.handleLogin();
-        done.fail();
-      } catch (err) {
-        expect(err.message).toContain(
-          "clientJwt query parameter does not appear to be a valid JWT string",
-        );
-        done();
-      }
     }
 
-    it("throws with invalid jwt (empty)", (done: DoneCallback) => {
-      testInvalidJwt(done, "");
-    });
+    (window.fetch as jest.Mock).mockReturnValueOnce(
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            access_token: accessToken,
+            needs_keys: false,
+            user: { name: "Farmer May", email: "may@transposit.com" },
+          } as TokenResponse),
+        ),
+      ),
+    );
 
-    it("throws with invalid jwt (not-properly formatted jwt)", (done: DoneCallback) => {
-      testInvalidJwt(done, "adsfasfdfd.fdsafadfsf");
-    });
+    setHref(FRONTEND_ORIGIN, "/handle-signin", `?code=some-code-to-trade`);
+    {
+      const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+      const signInSuccess: SignInSuccess = await transposit.handleSignIn();
 
-    it("throws with invalid jwt (not-base64 jwt)", (done: DoneCallback) => {
-      testInvalidJwt(done, "dffgdf--6667.fdsaf#f.");
-    });
-
-    it("throws with invalid jwt (not-json jwt)", (done: DoneCallback) => {
-      testInvalidJwt(
-        done,
-        `${btoa("{ not-=json: yeeeee")}.${btoa("{ not-=json: yeeeee")}.`,
+      expect(signInSuccess).toEqual({ needsKeys: false });
+      expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
+        "https://arbys-beef-xyz12.transposit.io/login/authorize/token",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body:
+            "grant_type=authorization_code&code=some-code-to-trade&redirect_uri=https%3A%2F%2Farbys-beef.com%2Fhandle-signin&code_verifier=code-verifier",
+        },
       );
-    });
+      expect(transposit.isSignedIn()).toBe(true);
+    }
 
-    it("throws with invalid jwt (expired)", (done: DoneCallback) => {
-      const expiredClaims = Object.assign({}, jplaceArbysClaims, {
-        exp: NOW_MINUS_3_DAYS / 1000,
-      });
-      testInvalidJwt(done, createUnsignedJwt(expiredClaims));
-    });
+    setHref(FRONTEND_ORIGIN, "/", "");
+    {
+      const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+      expect(transposit.isSignedIn()).toBe(true);
+    }
   });
 
-  describe("logout", () => {
+  it("knows when you're signed out", () => {
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+    expect(transposit.isSignedIn()).toBe(false);
+  });
+
+  it("knows when your session expired", () => {
+    makeSignedIn(accessToken);
     let transposit: Transposit;
 
-    beforeEach(() => {
-      setHref(
-        ARBYS_ORIGIN,
-        "/",
-        `?clientJwt=${jplaceArbysJwt}&needsKeys=false`,
-      );
-      transposit = new Transposit();
-      transposit.handleLogin();
-    });
+    transposit = new Transposit(BACKEND_ORIGIN);
+    expect(transposit.isSignedIn()).toBe(true);
 
-    it("handles successful logout", () => {
-      transposit.logOut(arbysUri("/login"));
+    // 3. days. later...
+    MockDate.set((claims.exp + 60 * 60 * 24 * 3) * 1000);
 
-      expect(localStorage.getItem(LOCAL_STORAGE_KEY)).toBeNull();
-      expect(transposit.isLoggedIn()).toBe(false);
-      expect(window.location.href).toEqual(
-        "/logout?redirectUri=https%3A%2F%2Farbys-beef-xyz12.transposit.io%2Flogin",
-      );
-    });
+    transposit = new Transposit(BACKEND_ORIGIN);
+    expect(transposit.isSignedIn()).toBe(false);
   });
 
-  describe("startLoginUri", () => {
-    it("returns the correct default location", () => {
-      const transposit: Transposit = new Transposit(ARBYS_ORIGIN);
+  it("starts sign-in with a specific provider", async () => {
+    expect.assertions(1);
 
-      expect(transposit.startLoginUri("https://altoids.com")).toEqual(
-        "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
+    const transposit: Transposit = new Transposit(`${BACKEND_ORIGIN}/`);
+
+    await transposit.signIn(frontendUri("/handle-signin"), "google");
+    expect(window.location.href).toEqual(
+      backendUri(
+        "/login/authorize?scope=openid+app&response_type=code&client_id=sdk&redirect_uri=https%3A%2F%2Farbys-beef.com%2Fhandle-signin&prompt=login&code_challenge=challenge-from-code-verifier&code_challenge_method=S256&provider=google",
+      ),
+    );
+  });
+
+  it("can't complete sign-in without a code", async () => {
+    expect.assertions(1);
+
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+
+    try {
+      await transposit.handleSignIn();
+    } catch (e) {
+      expect(e.message).toBe(
+        "code query parameter could not be found. This method should only be called after redirection during sign-in.",
       );
-    });
+    }
+  });
 
-    it("returns the correct google location", () => {
-      const transposit: Transposit = new Transposit(ARBYS_ORIGIN);
+  it("can't complete sign-in if token endpoint returns 4XX", async () => {
+    expect.assertions(1);
 
-      expect(transposit.startLoginUri("https://altoids.com", "google")).toEqual(
-        "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com&provider=google",
-      );
-      expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
-        "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com&provider=google",
-      );
-    });
+    setHref(FRONTEND_ORIGIN, "/handle-signin", `?code=some-code-to-trade`);
 
-    it("returns the correct slack location", () => {
-      const transposit: Transposit = new Transposit(ARBYS_ORIGIN);
+    (window.fetch as jest.Mock).mockReturnValueOnce(
+      Promise.resolve(
+        new Response(null, { status: 400, statusText: "Bad Request" }),
+      ),
+    );
 
-      expect(transposit.startLoginUri("https://altoids.com", "slack")).toEqual(
-        "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com&provider=slack",
-      );
-    });
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+
+    try {
+      await transposit.handleSignIn();
+    } catch (e) {
+      expect(e.message).toBe("Bad Request");
+    }
+  });
+
+  it("can't complete sign-in if token endpoint network errors", async () => {
+    expect.assertions(1);
+
+    setHref(FRONTEND_ORIGIN, "/handle-signin", `?code=some-code-to-trade`);
+
+    (window.fetch as jest.Mock).mockReturnValueOnce(
+      Promise.reject(new Error("Network error")),
+    );
+
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+
+    try {
+      await transposit.handleSignIn();
+    } catch (e) {
+      expect(e.message).toBe("Network error");
+    }
+  });
+
+  it("signs out", () => {
+    makeSignedIn(accessToken);
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+
+    expect(transposit.isSignedIn()).toBe(true);
+
+    transposit.signOut(frontendUri("/login"));
+
+    expect(transposit.isSignedIn()).toBe(false);
+    expect(loadAccessToken()).toBeNull();
+    expect(window.location.href).toBe(
+      "https://arbys-beef-xyz12.transposit.io/logout?redirectUri=https%3A%2F%2Farbys-beef.com%2Flogin",
+    );
+  });
+
+  it("links to the settings page", () => {
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+    expect(transposit.settingsUri(frontendUri("/success"))).toBe(
+      "https://arbys-beef-xyz12.transposit.io/settings?redirectUri=https%3A%2F%2Farbys-beef.com%2Fsuccess",
+    );
+    expect(transposit.settingsUri()).toBe(
+      "https://arbys-beef-xyz12.transposit.io/settings?redirectUri=https%3A%2F%2Farbys-beef.com%2F",
+    );
+  });
+
+  it("runs operation without sign-in", async () => {
+    expect.assertions(2);
+
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+
+    (window.fetch as jest.Mock).mockReturnValueOnce(
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            status: "SUCCESS",
+            requestId: "12345",
+            result: {
+              results: ["hello", "world"],
+            },
+          } as EndRequestLog),
+        ),
+      ),
+    );
+
+    const results: EndRequestLog = await transposit.run("hello_world");
+
+    expect(results.result.results).toEqual(["hello", "world"]);
+    expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
+      "https://arbys-beef-xyz12.transposit.io/api/v1/execute/hello_world",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: '{"parameters":{}}',
+      },
+    );
+  });
+
+  it("runs an operation with sign-in", async () => {
+    expect.assertions(2);
+
+    makeSignedIn(accessToken);
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+
+    (window.fetch as jest.Mock).mockReturnValueOnce(
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            status: "SUCCESS",
+            requestId: "12345",
+            result: {
+              results: ["hello", "world"],
+            },
+          } as EndRequestLog),
+        ),
+      ),
+    );
+
+    const results: EndRequestLog = await transposit.run("hello_world");
+
+    expect(results.result.results).toEqual(["hello", "world"]);
+    expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
+      "https://arbys-beef-xyz12.transposit.io/api/v1/execute/hello_world",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization:
+            "Bearer eyJhbGciOiJub25lIn0=.eyJpc3MiOiJodHRwczovL2FyYnlzLWJlZWYteHl6MTIudHJhbnNwb3NpdC5pbyIsInN1YiI6ImpwbGFjZUB0cmFuc3Bvc2l0LmNvbSIsImV4cCI6MTUyMjUxNDUxOSwiaWF0IjoxNTIxOTk2MTE5fQ==.",
+        },
+        body: '{"parameters":{}}',
+      },
+    );
+  });
+
+  it("run an operation and throws errors", async () => {
+    expect.assertions(1);
+
+    makeSignedIn(accessToken);
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+
+    (window.fetch as jest.Mock).mockReturnValueOnce(
+      Promise.reject(
+        new Response(null, { status: 400, statusText: "Bad Request" }),
+      ),
+    );
+    try {
+      await transposit.run("hello_world");
+    } catch (e) {
+      expect(e.statusText).toEqual("Bad Request");
+    }
   });
 });

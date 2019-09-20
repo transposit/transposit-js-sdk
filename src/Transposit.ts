@@ -15,161 +15,104 @@
  */
 
 import { EndRequestLog } from ".";
-
-export interface ClientClaims {
-  iss: string; // issuer
-  sub: string; // subject
-  exp: number; // expiration
-  iat: number; // issuedAt
-  publicToken: string;
-  repository: string;
-  email: string;
-  name: string;
-}
-
-export interface OperationParameters {
-  [paramName: string]: string;
-}
-
-// https://my-app.transposit.io?clientJwt=...needKeys=... -> https://my-app.transposit.io
-function hereWithoutSearch(): string {
-  return `${window.location.origin}${window.location.pathname}`;
-}
-
-export const LOCAL_STORAGE_KEY = "TRANSPOSIT_SESSION";
+import { popCodeVerifier, pushCodeVerifier } from "./signin/pkce-helper";
+import {
+  clearPersistedData,
+  loadAccessToken,
+  persistAccessToken,
+  TokenResponse,
+} from "./signin/token";
+import { chompSlash, formUrlEncode, hereWithoutSearch } from "./utils";
 
 export class Transposit {
-  private claims: ClientClaims | null = null;
+  private hostedAppOrigin: string;
+  private accessToken: string | null;
 
-  constructor(private hostedAppOrigin: string = "") {
-    this.claims = this.loadClaims();
+  constructor(hostedAppOrigin: string = "") {
+    this.hostedAppOrigin = chompSlash(hostedAppOrigin);
+    this.accessToken = null;
+
+    this.load();
   }
 
   private uri(path: string = ""): string {
     return `${this.hostedAppOrigin}${path}`;
   }
 
-  private loadClaims(): ClientClaims | null {
-    const claimsJSON = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!claimsJSON) {
-      return null;
+  private load(): void {
+    this.accessToken = loadAccessToken();
+  }
+
+  isSignedIn(): boolean {
+    return this.accessToken !== null;
+  }
+
+  async signIn(
+    redirectUri: string,
+    provider?: "google" | "slack",
+  ): Promise<void> {
+    const codeChallenge = await pushCodeVerifier();
+
+    const params = new URLSearchParams();
+    params.append("scope", "openid app");
+    params.append("response_type", "code");
+    params.append("client_id", "sdk");
+    params.append("redirect_uri", redirectUri);
+    params.append("prompt", "login");
+    params.append("code_challenge", codeChallenge);
+    params.append("code_challenge_method", "S256");
+    if (provider) {
+      params.append("provider", provider);
     }
-
-    let claims: ClientClaims;
-    try {
-      claims = JSON.parse(claimsJSON);
-    } catch (err) {
-      return null;
-    }
-
-    if (!this.checkClaimsValid(claims)) {
-      return null;
-    }
-
-    return claims;
+    window.location.href = this.uri(`/login/authorize?${params.toString()}`);
   }
 
-  private persistClaims(claimsJSON: string): void {
-    localStorage.setItem(LOCAL_STORAGE_KEY, claimsJSON);
-  }
-
-  private clearClaims(): void {
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
-  }
-
-  private checkClaimsValid(claims: ClientClaims): boolean {
-    const expiration = claims.exp * 1000;
-    const now = Date.now();
-    return expiration > now;
-  }
-
-  private assertLoggedIn(): void {
-    if (this.claims === null) {
-      throw new Error("No client claims found.");
-    }
-  }
-
-  isLoggedIn(): boolean {
-    return this.claims !== null;
-  }
-
-  handleLogin(callback?: (info: { needsKeys: boolean }) => void): void {
+  async handleSignIn(): Promise<SignInSuccess> {
     // Read query parameters
 
     const searchParams = new URLSearchParams(window.location.search);
 
-    if (!searchParams.has("clientJwt")) {
+    if (!searchParams.has("code")) {
       throw new Error(
-        "clientJwt query parameter could not be found. This method should only be called after redirection during login.",
+        "code query parameter could not be found. This method should only be called after redirection during sign-in.",
       );
     }
-    const clientJwtString = searchParams.get("clientJwt")!;
+    const code = searchParams.get("code")!;
 
-    if (!searchParams.has("needsKeys")) {
-      throw new Error(
-        "needsKeys query parameter could not be found. This is unexpected.",
-      );
+    // Exchange code for access_token
+
+    const codeVerifier = popCodeVerifier();
+
+    const response = await fetch(this.uri(`/login/authorize/token`), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: formUrlEncode({
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: hereWithoutSearch(),
+        code_verifier: codeVerifier,
+      }),
+    });
+    if (!response.ok) {
+      throw Error(response.statusText);
     }
-    const needsKeys = searchParams.get("needsKeys")! === "true";
+    const tokenResponse = (await response.json()) as TokenResponse;
 
-    // Parse JWT string
+    // Perform sign-in
 
-    const jwtParts: string[] = clientJwtString.split(".");
-    if (jwtParts.length !== 3) {
-      throw new Error(
-        "clientJwt query parameter does not appear to be a valid JWT string. This method should only be called after redirection during login.",
-      );
-    }
-    let claimsJSON: string;
-    try {
-      claimsJSON = atob(jwtParts[1]);
-    } catch (err) {
-      throw new Error(
-        "clientJwt query parameter does not appear to be a valid JWT string. This method should only be called after redirection during login.",
-      );
-    }
-    let claims: ClientClaims;
-    try {
-      claims = JSON.parse(claimsJSON);
-    } catch (err) {
-      throw new Error(
-        "clientJwt query parameter does not appear to be a valid JWT string. This method should only be called after redirection during login.",
-      );
-    }
-    if (!this.checkClaimsValid(claims)) {
-      throw new Error(
-        "clientJwt query parameter does not appear to be a valid JWT string. clientJwt is expired.",
-      );
-    }
+    persistAccessToken(tokenResponse.access_token);
+    this.accessToken = tokenResponse.access_token;
 
-    // Persist claims. Login has succeeded.
+    // Return to indicate sign-in success
 
-    this.claims = claims;
-    this.persistClaims(claimsJSON);
-
-    // Perform callback or default path replacement
-
-    if (callback) {
-      if (typeof callback !== "function") {
-        throw new Error("Provided callback is not a function.");
-      }
-      callback({ needsKeys });
-    } else {
-      if (needsKeys) {
-        window.location.href = this.settingsUri(hereWithoutSearch());
-      } else {
-        window.history.replaceState(
-          {},
-          document.title,
-          window.location.pathname,
-        );
-      }
-    }
+    return { needsKeys: tokenResponse.needs_keys };
   }
 
-  logOut(redirectUri: string): void {
-    this.clearClaims();
-    this.claims = null;
+  signOut(redirectUri: string): void {
+    this.accessToken = null;
+    clearPersistedData();
 
     window.location.href = this.uri(
       `/logout?redirectUri=${encodeURIComponent(redirectUri)}`,
@@ -184,57 +127,22 @@ export class Transposit {
     );
   }
 
-  startLoginUri(redirectUri?: string, provider?: "google" | "slack"): string {
-    const params = new URLSearchParams();
-    params.append("redirectUri", redirectUri || window.location.href);
-    if (provider) {
-      params.append("provider", provider);
-    }
-    return this.uri(`/login/accounts?${params.toString()}`);
-  }
-
-  // Deprecated in favor of settingsUri
-  getConnectLocation(redirectUri?: string): string {
-    return this.settingsUri(redirectUri);
-  }
-
-  // Deprecated in favor of startLoginUri
-  getGoogleLoginLocation(redirectUri?: string): string {
-    return this.startLoginUri(redirectUri, "google");
-  }
-
-  // Deprecated
-  getLoginLocation(): string {
-    return this.uri("/login");
-  }
-
-  getUserEmail(): string | null {
-    this.assertLoggedIn();
-    return this.claims!.email;
-  }
-
-  getUserName(): string | null {
-    this.assertLoggedIn();
-    return this.claims!.name;
-  }
-
-  async runOperation(
+  async run(
     operationId: string,
-    params: OperationParameters = {},
+    parameters: OperationParameters = {},
   ): Promise<EndRequestLog> {
     const headers: HeadersInit = {
       "Content-Type": "application/json",
     };
-    if (this.claims) {
-      headers["X-PUBLIC-TOKEN"] = this.claims.publicToken;
+    if (this.accessToken) {
+      headers.Authorization = `Bearer ${this.accessToken}`;
     }
 
     const response = await fetch(this.uri(`/api/v1/execute/${operationId}`), {
-      credentials: "include",
       method: "POST",
       headers,
       body: JSON.stringify({
-        parameters: params,
+        parameters,
       }),
     });
 
@@ -244,4 +152,12 @@ export class Transposit {
       throw response;
     }
   }
+}
+
+export interface SignInSuccess {
+  needsKeys: boolean;
+}
+
+export interface OperationParameters {
+  [paramName: string]: string;
 }
