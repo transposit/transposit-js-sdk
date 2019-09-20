@@ -15,6 +15,7 @@
  */
 
 import "jest-localstorage-mock";
+import "whatwg-fetch"; // polyfill for Response class
 
 // Most hilarious work around courtesy of https://github.com/facebook/jest/issues/5124
 const windowLocation = JSON.stringify(window.location);

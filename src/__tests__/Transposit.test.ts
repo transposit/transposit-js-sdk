@@ -15,7 +15,7 @@
  */
 
 import * as MockDate from "mockdate";
-import { TokenResponse } from "../signin/token";
+import { TokenResponse, Claims } from "../signin/token";
 import DoneCallback = jest.DoneCallback;
 import { SignInSuccess, Transposit } from "../Transposit";
 
@@ -28,15 +28,20 @@ function frontendUri(path: string = ""): string {
   return `${FRONTEND_ORIGIN}${path}`;
 }
 
-// const NOW_MINUS_3_DAYS: number = 1521996119000;
-// const NOW: number = 1522255319000;
-// const NOW_PLUS_3_DAYS: number = 1522514519000;
+jest.mock("../signin/pkce-helper", () => ({
+  pushCodeVerifier: () => "challenge-from-code-verifier",
+  popCodeVerifier: () => "code-verifier",
+}));
 
-// function createUnsignedJwt(claims: Claims): string {
-//   const header: string = btoa(JSON.stringify({ alg: "none" }));
-//   const body: string = btoa(JSON.stringify(claims));
-//   return `${header}.${body}.`;
-// }
+const NOW_MINUS_3_DAYS: number = 1521996119000;
+const NOW: number = 1522255319000;
+const NOW_PLUS_3_DAYS: number = 1522514519000;
+
+function createUnsignedJwt(claims: Claims): string {
+  const header: string = btoa(JSON.stringify({ alg: "none" }));
+  const body: string = btoa(JSON.stringify(claims));
+  return `${header}.${body}.`;
+}
 
 function setHref(origin: string, pathname: string, search: string): void {
   window.location.href = `${origin}${pathname}${search}`;
@@ -49,21 +54,17 @@ describe("Transposit", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.clear();
-    // MockDate.set(NOW);
+    MockDate.set(NOW);
     setHref(FRONTEND_ORIGIN, "/", "");
   });
 
-  // const jplaceArbysClaims: ClientClaims = Object.freeze({
-  //   iss: ARBYS_ORIGIN,
-  //   sub: "jplace@transposit.com",
-  //   exp: NOW_PLUS_3_DAYS / 1000,
-  //   iat: NOW_MINUS_3_DAYS / 1000,
-  //   publicToken: "thisisapublictoken",
-  //   repository: "jplace/arbys_beef",
-  //   email: "jplace@transposit.com",
-  //   name: "Jordan 'The Beef' Place",
-  // });
-  // const jplaceArbysJwt: string = createUnsignedJwt(jplaceArbysClaims);
+  const claims: Claims = Object.freeze({
+    iss: BACKEND_ORIGIN,
+    sub: "jplace@transposit.com",
+    exp: NOW_PLUS_3_DAYS / 1000,
+    iat: NOW_MINUS_3_DAYS / 1000,
+  });
+  const accessToken: string = createUnsignedJwt(claims);
 
   it("signs in", async () => {
     expect.assertions(5);
@@ -71,13 +72,17 @@ describe("Transposit", () => {
     {
       const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
       await transposit.signIn(frontendUri("/handle-signin"));
-      expect(window.location.href).toEqual(backendUri("/login/authorize/..."));
+      expect(window.location.href).toEqual(
+        backendUri(
+          "/login/authorize?scope=openid+app&response_type=code&client_id=sdk&redirect_uri=https%3A%2F%2Farbys-beef.com%2Fhandle-signin&prompt=login&code_challenge=challenge-from-code-verifier&code_challenge_method=S256",
+        ),
+      );
     }
 
     (window.fetch as jest.Mock).mockReturnValueOnce(
       new Response(
         JSON.stringify({
-          access_token: "some-token",
+          access_token: accessToken,
           needs_keys: false,
           user: { name: "Farmer May", email: "may@transposit.com" },
         } as TokenResponse),
@@ -90,7 +95,15 @@ describe("Transposit", () => {
       const signInSuccess: SignInSuccess = await transposit.handleSignIn();
 
       expect(signInSuccess).toEqual({ needsKeys: false });
-      expect(window.fetch as jest.Mock).toHaveBeenCalledWith({});
+      expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
+        "https://arbys-beef-xyz12.transposit.io/login/authorize/token",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body:
+            "grant_type=authorization_code&code=some-code-to-trade&redirect_uri=https%3A%2F%2Farbys-beef.com%2Fhandle-signin&code_verifier=code-verifier",
+        },
+      );
       expect(transposit.isSignedIn()).toBe(true);
     }
 
