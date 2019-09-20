@@ -15,7 +15,13 @@
  */
 
 import * as MockDate from "mockdate";
-import { TokenResponse, Claims } from "../signin/token";
+import { EndRequestLog } from "../EndRequestLog";
+import {
+  Claims,
+  loadAccessToken,
+  persistAccessToken,
+  TokenResponse,
+} from "../signin/token";
 import DoneCallback = jest.DoneCallback;
 import { SignInSuccess, Transposit } from "../Transposit";
 
@@ -50,6 +56,10 @@ function setHref(origin: string, pathname: string, search: string): void {
   window.location.search = search;
 }
 
+function makeSignedIn(accessToken: string) {
+  persistAccessToken(accessToken);
+}
+
 describe("Transposit", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -68,7 +78,7 @@ describe("Transposit", () => {
 
   it("signs in", async () => {
     expect.assertions(5);
-    setHref(FRONTEND_ORIGIN, "/", "");
+
     {
       const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
       await transposit.signIn(frontendUri("/handle-signin"));
@@ -80,12 +90,14 @@ describe("Transposit", () => {
     }
 
     (window.fetch as jest.Mock).mockReturnValueOnce(
-      new Response(
-        JSON.stringify({
-          access_token: accessToken,
-          needs_keys: false,
-          user: { name: "Farmer May", email: "may@transposit.com" },
-        } as TokenResponse),
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            access_token: accessToken,
+            needs_keys: false,
+            user: { name: "Farmer May", email: "may@transposit.com" },
+          } as TokenResponse),
+        ),
       ),
     );
 
@@ -114,123 +126,151 @@ describe("Transposit", () => {
     }
   });
 
-  // describe("isLoggedIn", () => {
-  //   it("knows when you're logged out", () => {
-  //     const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+  it("knows when you're signed out", () => {
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+    expect(transposit.isSignedIn()).toBe(false);
+  });
 
-  //     expect(transposit.isSignedIn()).toBe(false);
-  //   });
+  it("knows when your session expired", () => {
+    makeSignedIn(accessToken);
+    let transposit: Transposit;
 
-  //   it("knows when your session expired", () => {
-  //     setHref(
-  //       ARBYS_ORIGIN,
-  //       "/",
-  //       `?clientJwt=${jplaceArbysJwt}&needsKeys=false`,
-  //     );
+    transposit = new Transposit(BACKEND_ORIGIN);
+    expect(transposit.isSignedIn()).toBe(true);
 
-  //     let transposit: Transposit = new Transposit();
-  //     transposit.handleSignIn();
+    // 3. days. later...
+    MockDate.set((claims.exp + 60 * 60 * 24 * 3) * 1000);
 
-  //     // 3 days after expiration
-  //     MockDate.set((jplaceArbysClaims.exp + 60 * 60 * 24 * 3) * 1000);
-  //     transposit = new Transposit();
+    transposit = new Transposit(BACKEND_ORIGIN);
+    expect(transposit.isSignedIn()).toBe(false);
+  });
 
-  //     expect(transposit.isSignedIn()).toBe(false);
-  //   });
-  // });
+  it("starts sign-in with a specific provider", async () => {
+    expect.assertions(1);
 
-  // describe("handleLogin", () => {
-  //   it("calls replaceState", () => {
-  //     setHref(
-  //       ARBYS_ORIGIN,
-  //       "/",
-  //       `?clientJwt=${jplaceArbysJwt}&needsKeys=false`,
-  //     );
+    const transposit: Transposit = new Transposit(`${BACKEND_ORIGIN}/`);
 
-  //     const transposit: Transposit = new Transposit();
-  //     transposit.handleSignIn();
+    await transposit.signIn(frontendUri("/handle-signin"), "google");
+    expect(window.location.href).toEqual(
+      backendUri(
+        "/login/authorize?scope=openid+app&response_type=code&client_id=sdk&redirect_uri=https%3A%2F%2Farbys-beef.com%2Fhandle-signin&prompt=login&code_challenge=challenge-from-code-verifier&code_challenge_method=S256&provider=google",
+      ),
+    );
+  });
 
-  //     expect(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)!)).toEqual(
-  //       jplaceArbysClaims,
-  //     );
-  //     expect(window.history.replaceState).toHaveBeenCalledWith(
-  //       {},
-  //       window.document.title,
-  //       "/",
-  //     );
-  //   });
+  it("can't complete sign-in without a code", async () => {
+    expect.assertions(1);
 
-  //   it("redirects when needs keys", () => {
-  //     setHref(ARBYS_ORIGIN, "/", `?clientJwt=${jplaceArbysJwt}&needsKeys=true`);
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
 
-  //     const transposit: Transposit = new Transposit();
-  //     transposit.handleSignIn();
+    try {
+      await transposit.handleSignIn();
+    } catch (e) {
+      expect(e.message).toBe(
+        "code query parameter could not be found. This method should only be called after redirection during sign-in.",
+      );
+    }
+  });
 
-  //     expect(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)!)).toEqual(
-  //       jplaceArbysClaims,
-  //     );
-  //     expect(window.location.href).toEqual(
-  //       "/settings?redirectUri=https%3A%2F%2Farbys-beef-xyz12.transposit.io%2F",
-  //     );
-  //   });
+  it("can't complete sign-in if token endpoint returns 4XX", async () => {
+    expect.assertions(1);
 
-  //   it("calls callback", () => {
-  //     setHref(ARBYS_ORIGIN, "/", `?clientJwt=${jplaceArbysJwt}&needsKeys=true`);
+    setHref(FRONTEND_ORIGIN, "/handle-signin", `?code=some-code-to-trade`);
 
-  //     const mockCallback = jest.fn();
+    (window.fetch as jest.Mock).mockReturnValueOnce(
+      Promise.resolve(
+        new Response(null, { status: 400, statusText: "Bad Request" }),
+      ),
+    );
 
-  //     const transposit: Transposit = new Transposit();
-  //     transposit.handleSignIn(mockCallback);
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
 
-  //     expect(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)!)).toEqual(
-  //       jplaceArbysClaims,
-  //     );
-  //     expect(mockCallback).toHaveBeenCalledWith({ needsKeys: true });
-  //     expect(window.history.replaceState).not.toHaveBeenCalled();
-  //   });
+    try {
+      await transposit.handleSignIn();
+    } catch (e) {
+      expect(e.message).toBe("Bad Request");
+    }
+  });
 
-  //   it("throws if callback is not a function", (done: DoneCallback) => {
-  //     setHref(ARBYS_ORIGIN, "/", `?clientJwt=${jplaceArbysJwt}&needsKeys=true`);
+  it("can't complete sign-in if token endpoint network errors", async () => {
+    expect.assertions(1);
 
-  //     const transposit: Transposit = new Transposit();
-  //     try {
-  //       transposit.handleSignIn("string" as any);
-  //       done.fail();
-  //     } catch (err) {
-  //       expect(err.message).toContain("Provided callback is not a function.");
-  //       done();
-  //     }
-  //   });
+    setHref(FRONTEND_ORIGIN, "/handle-signin", `?code=some-code-to-trade`);
 
-  //   it("throws without jwt", (done: DoneCallback) => {
-  //     setHref(ARBYS_ORIGIN, "/", "");
+    (window.fetch as jest.Mock).mockReturnValueOnce(
+      Promise.reject(new Error("Network error")),
+    );
 
-  //     const transposit: Transposit = new Transposit();
-  //     try {
-  //       transposit.handleSignIn();
-  //       done.fail();
-  //     } catch (err) {
-  //       expect(err.message).toContain(
-  //         "clientJwt query parameter could not be found",
-  //       );
-  //       done();
-  //     }
-  //   });
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
 
-  //   it("throws without needsKeys", (done: DoneCallback) => {
-  //     setHref(ARBYS_ORIGIN, "/", `?clientJwt=${jplaceArbysJwt}`);
+    try {
+      await transposit.handleSignIn();
+    } catch (e) {
+      expect(e.message).toBe("Network error");
+    }
+  });
 
-  //     const transposit: Transposit = new Transposit();
-  //     try {
-  //       transposit.handleSignIn();
-  //       done.fail();
-  //     } catch (err) {
-  //       expect(err.message).toContain(
-  //         "needsKeys query parameter could not be found. This is unexpected.",
-  //       );
-  //       done();
-  //     }
-  //   });
+  it("signs out", () => {
+    makeSignedIn(accessToken);
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+
+    expect(transposit.isSignedIn()).toBe(true);
+
+    transposit.signOut(frontendUri("/login"));
+
+    expect(transposit.isSignedIn()).toBe(false);
+    expect(loadAccessToken()).toBeNull();
+    expect(window.location.href).toBe(
+      "https://arbys-beef-xyz12.transposit.io/logout?redirectUri=https%3A%2F%2Farbys-beef.com%2Flogin",
+    );
+  });
+
+  it("links to the settings page", () => {
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+    expect(transposit.settingsUri(frontendUri("/success"))).toBe(
+      "https://arbys-beef-xyz12.transposit.io/settings?redirectUri=https%3A%2F%2Farbys-beef.com%2Fsuccess",
+    );
+    expect(transposit.settingsUri()).toBe(
+      "https://arbys-beef-xyz12.transposit.io/settings?redirectUri=https%3A%2F%2Farbys-beef.com%2F",
+    );
+  });
+
+  it("run an un-authenticated operation", async () => {
+    expect.assertions(2);
+
+    makeSignedIn(accessToken);
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+
+    (window.fetch as jest.Mock).mockReturnValueOnce(
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            status: "SUCCESS",
+            requestId: "12345",
+            result: {
+              results: ["hello", "world"],
+            },
+          } as EndRequestLog),
+        ),
+      ),
+    );
+
+    const results: EndRequestLog = await transposit.run("hello_world");
+
+    expect(results.result.results).toEqual(["hello", "world"]);
+    expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
+      "https://arbys-beef-xyz12.transposit.io/api/v1/execute/hello_world",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization:
+            "Bearer eyJhbGciOiJub25lIn0=.eyJpc3MiOiJodHRwczovL2FyYnlzLWJlZWYteHl6MTIudHJhbnNwb3NpdC5pbyIsInN1YiI6ImpwbGFjZUB0cmFuc3Bvc2l0LmNvbSIsImV4cCI6MTUyMjUxNDUxOSwiaWF0IjoxNTIxOTk2MTE5fQ==.",
+        },
+        body: '{"parameters":{}}',
+      },
+    );
+  });
 
   //   function testInvalidJwt(done: DoneCallback, invalidJwt: string) {
   //     setHref(ARBYS_ORIGIN, "/", `?clientJwt=${invalidJwt}&needsKeys=false`);
@@ -271,61 +311,6 @@ describe("Transposit", () => {
   //       exp: NOW_MINUS_3_DAYS / 1000,
   //     });
   //     testInvalidJwt(done, createUnsignedJwt(expiredClaims));
-  //   });
-  // });
-
-  // describe("logout", () => {
-  //   let transposit: Transposit;
-
-  //   beforeEach(() => {
-  //     setHref(
-  //       ARBYS_ORIGIN,
-  //       "/",
-  //       `?clientJwt=${jplaceArbysJwt}&needsKeys=false`,
-  //     );
-  //     transposit = new Transposit();
-  //     transposit.handleSignIn();
-  //   });
-
-  //   it("handles successful logout", () => {
-  //     transposit.signOut(arbysUri("/login"));
-
-  //     expect(localStorage.getItem(LOCAL_STORAGE_KEY)).toBeNull();
-  //     expect(transposit.isSignedIn()).toBe(false);
-  //     expect(window.location.href).toEqual(
-  //       "/logout?redirectUri=https%3A%2F%2Farbys-beef-xyz12.transposit.io%2Flogin",
-  //     );
-  //   });
-  // });
-
-  // describe("startLoginUri", () => {
-  //   it("returns the correct default location", () => {
-  //     const transposit: Transposit = new Transposit(ARBYS_ORIGIN);
-
-  //     expect(transposit.startSignInUri("https://altoids.com")).toEqual(
-  //       "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com",
-  //     );
-  //   });
-
-  //   it("returns the correct google location", () => {
-  //     const transposit: Transposit = new Transposit(ARBYS_ORIGIN);
-
-  //     expect(
-  //       transposit.startSignInUri("https://altoids.com", "google"),
-  //     ).toEqual(
-  //       "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com&provider=google",
-  //     );
-  //     expect(transposit.getGoogleLoginLocation("https://altoids.com")).toEqual(
-  //       "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com&provider=google",
-  //     );
-  //   });
-
-  //   it("returns the correct slack location", () => {
-  //     const transposit: Transposit = new Transposit(ARBYS_ORIGIN);
-
-  //     expect(transposit.startSignInUri("https://altoids.com", "slack")).toEqual(
-  //       "https://arbys-beef-xyz12.transposit.io/login/accounts?redirectUri=https%3A%2F%2Faltoids.com&provider=slack",
-  //     );
   //   });
   // });
 });
