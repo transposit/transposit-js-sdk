@@ -235,7 +235,41 @@ describe("Transposit", () => {
     );
   });
 
-  it("run an un-authenticated operation", async () => {
+  it("runs operation without sign-in", async () => {
+    expect.assertions(2);
+
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+
+    (window.fetch as jest.Mock).mockReturnValueOnce(
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            status: "SUCCESS",
+            requestId: "12345",
+            result: {
+              results: ["hello", "world"],
+            },
+          } as EndRequestLog),
+        ),
+      ),
+    );
+
+    const results: EndRequestLog = await transposit.run("hello_world");
+
+    expect(results.result.results).toEqual(["hello", "world"]);
+    expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
+      "https://arbys-beef-xyz12.transposit.io/api/v1/execute/hello_world",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: '{"parameters":{}}',
+      },
+    );
+  });
+
+  it("runs an operation with sign-in", async () => {
     expect.assertions(2);
 
     makeSignedIn(accessToken);
@@ -270,6 +304,24 @@ describe("Transposit", () => {
         body: '{"parameters":{}}',
       },
     );
+  });
+
+  it("run an operation and throws errors", async () => {
+    expect.assertions(1);
+
+    makeSignedIn(accessToken);
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+
+    (window.fetch as jest.Mock).mockReturnValueOnce(
+      Promise.reject(
+        new Response(null, { status: 400, statusText: "Bad Request" }),
+      ),
+    );
+    try {
+      await transposit.run("hello_world");
+    } catch (e) {
+      expect(e.statusText).toEqual("Bad Request");
+    }
   });
 
   //   function testInvalidJwt(done: DoneCallback, invalidJwt: string) {
