@@ -22,7 +22,13 @@ import {
   persistAccessToken,
   TokenResponse,
 } from "../signin/token";
-import { setHref } from "../test/test-utils";
+import {
+  createUnsignedJwt,
+  NOW,
+  NOW_MINUS_3_DAYS,
+  NOW_PLUS_3_DAYS,
+  setHref,
+} from "../test/test-utils";
 import { SignInSuccess, Transposit } from "../Transposit";
 jest.mock("../signin/pkce-helper");
 
@@ -33,16 +39,6 @@ function backendUri(path: string = ""): string {
 const FRONTEND_ORIGIN: string = "https://arbys-beef.com";
 function frontendUri(path: string = ""): string {
   return `${FRONTEND_ORIGIN}${path}`;
-}
-
-const NOW_MINUS_3_DAYS: number = 1521996119000;
-const NOW: number = 1522255319000;
-const NOW_PLUS_3_DAYS: number = 1522514519000;
-
-function createUnsignedJwt(claims: Claims): string {
-  const header: string = btoa(JSON.stringify({ alg: "none" }));
-  const body: string = btoa(JSON.stringify(claims));
-  return `${header}.${body}.`;
 }
 
 function makeSignedIn(accessToken: string) {
