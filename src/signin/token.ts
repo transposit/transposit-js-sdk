@@ -17,11 +17,6 @@
 export interface TokenResponse {
   access_token: string;
   needs_keys: boolean;
-  user: User;
-}
-export interface User {
-  name: string;
-  email: string;
 }
 
 export interface Claims {
