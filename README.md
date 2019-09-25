@@ -97,9 +97,9 @@ Create a page that handles redirection at the end of sign-in. Use the SDK to com
 </script>
 ```
 
-### Signed-in routes
+### Signed in routes
 
-For all routes that require sign-in, check if the user is signed-in. Redirect to your sign-in page if they are not.
+For all routes that require sign-in, check if the user is signed in. Redirect to your sign-in page if they are not.
 
 ```html
 <script>
