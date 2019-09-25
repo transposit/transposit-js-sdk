@@ -15,6 +15,7 @@
  */
 
 import { EndRequestLog } from ".";
+import { Stash } from ".";
 
 export interface ClientClaims {
   iss: string; // issuer
@@ -218,10 +219,33 @@ export class Transposit {
     return this.claims!.name;
   }
 
+  get stash() {
+    return new Stash(this);
+  }
+
   async runOperation(
     operationId: string,
     params: OperationParameters = {},
   ): Promise<EndRequestLog> {
+    return this.makeCallJson<EndRequestLog>("POST", `/api/v1/execute/${operationId}`, {}, {parameters: params});
+  }
+
+  async makeCallJson<T>(
+    method: string,
+    path: string,
+    queryParams: any,
+    params?: any,
+  ): Promise<T> {
+    const response = await this.makeCall(method, path, queryParams, params);
+    return (await response.json());
+  }
+
+  async makeCall(
+    method: string,
+    path: string,
+    queryParams: any,
+    params?: any,
+  ): Promise<Response> {
     const headers: HeadersInit = {
       "Content-Type": "application/json",
     };
@@ -229,17 +253,20 @@ export class Transposit {
       headers["X-PUBLIC-TOKEN"] = this.claims.publicToken;
     }
 
-    const response = await fetch(this.uri(`/api/v1/execute/${operationId}`), {
+    const url = new URL(path, this.hostedAppOrigin);
+    Object.keys(queryParams).forEach(key => url.searchParams.append(key, queryParams[key]));
+
+    const body = params == null ? null : JSON.stringify(params);
+
+    const response = await fetch(url.href, {
       credentials: "include",
-      method: "POST",
+      method: method,
       headers,
-      body: JSON.stringify({
-        parameters: params,
-      }),
+      body: body,
     });
 
     if (response.status >= 200 && response.status < 300) {
-      return (await response.json()) as EndRequestLog;
+      return response; 
     } else {
       throw response;
     }
