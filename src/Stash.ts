@@ -32,11 +32,11 @@ export class Stash implements MutableKeyValueStore<any> {
     return pairs.map(pair => pair.key);
   }
 
-  async get(key: string): Promise<any> {
+  async get(keyName: string): Promise<any> {
     const pairs = await this.transposit.makeCallJson<KeyValuePair<any>[]>(
       "GET",
       "/api/v1/stash",
-      { keyName: key },
+      { keyName },
     );
     if (pairs.length == 0) {
       return null;
@@ -47,13 +47,13 @@ export class Stash implements MutableKeyValueStore<any> {
 
   async put(key: string, value: any): Promise<void> {
     return this.transposit
-      .makeCall("POST", "/api/v1/stash", {}, { key: key, value: value })
+      .makeCall("POST", "/api/v1/stash", {}, { key, value })
       .then(_ => {});
   }
 
-  async remove(key: string): Promise<void> {
+  async remove(keyName: string): Promise<void> {
     return this.transposit
-      .makeCall("DELETE", "/api/v1/stash", { keyName: key })
+      .makeCall("DELETE", "/api/v1/stash", { keyName })
       .then(_ => {});
   }
 }

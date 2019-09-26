@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { EndRequestLog } from ".";
+import { EndRequestLog, Stash } from ".";
 import { popCodeVerifier, pushCodeVerifier } from "./signin/pkce-helper";
 import {
   clearPersistedData,
@@ -139,7 +139,7 @@ export class Transposit {
       "POST",
       `/api/v1/execute/${operationId}`,
       {},
-      { parameters: params },
+      { parameters },
     );
   }
 
@@ -174,9 +174,9 @@ export class Transposit {
     const body = params == null ? null : JSON.stringify(params);
 
     const response = await fetch(url.href, {
-      method: "POST",
+      method,
       headers,
-      body: body,
+      body,
     });
 
     if (response.status >= 200 && response.status < 300) {
