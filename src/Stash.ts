@@ -38,7 +38,7 @@ export class Stash implements MutableKeyValueStore<any> {
       "/api/v1/stash",
       { keyName },
     );
-    if (pairs.length == 0) {
+    if (pairs.length === 0) {
       return null;
     } else {
       return pairs[0].value;
@@ -48,12 +48,12 @@ export class Stash implements MutableKeyValueStore<any> {
   async put(key: string, value: any): Promise<void> {
     return this.transposit
       .makeCall("POST", "/api/v1/stash", {}, { key, value })
-      .then(_ => {});
+      .then(_ => undefined);
   }
 
   async remove(keyName: string): Promise<void> {
     return this.transposit
       .makeCall("DELETE", "/api/v1/stash", { keyName })
-      .then(_ => {});
+      .then(_ => undefined);
   }
 }
