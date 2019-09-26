@@ -135,7 +135,12 @@ export class Transposit {
     operationId: string,
     parameters: OperationParameters = {},
   ): Promise<EndRequestLog> {
-    return this.makeCallJson<EndRequestLog>("POST", `/api/v1/execute/${operationId}`, {}, {parameters: params});
+    return this.makeCallJson<EndRequestLog>(
+      "POST",
+      `/api/v1/execute/${operationId}`,
+      {},
+      { parameters: params },
+    );
   }
 
   async makeCallJson<T>(
@@ -145,7 +150,7 @@ export class Transposit {
     params?: any,
   ): Promise<T> {
     const response = await this.makeCall(method, path, queryParams, params);
-    return (await response.json());
+    return await response.json();
   }
 
   async makeCall(
@@ -162,7 +167,9 @@ export class Transposit {
     }
 
     const url = new URL(path, this.hostedAppOrigin);
-    Object.keys(queryParams).forEach(key => url.searchParams.append(key, queryParams[key]));
+    Object.keys(queryParams).forEach(key =>
+      url.searchParams.append(key, queryParams[key]),
+    );
 
     const body = params == null ? null : JSON.stringify(params);
 
@@ -173,7 +180,7 @@ export class Transposit {
     });
 
     if (response.status >= 200 && response.status < 300) {
-      return response; 
+      return response;
     } else {
       throw response;
     }
