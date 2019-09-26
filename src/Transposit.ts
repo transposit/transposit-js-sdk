@@ -267,9 +267,9 @@ export class Transposit {
 
     const response = await fetch(url.href, {
       credentials: "include",
-      method: method,
+      method,
       headers,
-      body: body,
+      body,
     });
 
     if (response.status >= 200 && response.status < 300) {
