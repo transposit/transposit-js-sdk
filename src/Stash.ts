@@ -18,19 +18,26 @@ import { Transposit } from ".";
 import { KeyValuePair, MutableKeyValueStore } from "./KeyValueStore";
 
 export class Stash implements MutableKeyValueStore<any> {
-
   private transposit: Transposit;
   constructor(transposit: Transposit) {
     this.transposit = transposit;
   }
 
   async listKeys(): Promise<string[]> {
-    const pairs = await this.transposit.makeCallJson<KeyValuePair<any>[]>("GET", "/api/v1/stash", {});
+    const pairs = await this.transposit.makeCallJson<KeyValuePair<any>[]>(
+      "GET",
+      "/api/v1/stash",
+      {},
+    );
     return pairs.map(pair => pair.key);
   }
 
   async get(key: string): Promise<any> {
-    const pairs = await this.transposit.makeCallJson<KeyValuePair<any>[]>("GET", "/api/v1/stash", {keyName: key});
+    const pairs = await this.transposit.makeCallJson<KeyValuePair<any>[]>(
+      "GET",
+      "/api/v1/stash",
+      { keyName: key },
+    );
     if (pairs.length == 0) {
       return null;
     } else {
@@ -39,11 +46,14 @@ export class Stash implements MutableKeyValueStore<any> {
   }
 
   async put(key: string, value: any): Promise<void> {
-    return this.transposit.makeCall("POST", "/api/v1/stash", {}, {key: key, value: value}).then(_ => {});
+    return this.transposit
+      .makeCall("POST", "/api/v1/stash", {}, { key: key, value: value })
+      .then(_ => {});
   }
 
   async remove(key: string): Promise<void> {
-    return this.transposit.makeCall("DELETE", "/api/v1/stash", {keyName: key}).then(_ => {});
+    return this.transposit
+      .makeCall("DELETE", "/api/v1/stash", { keyName: key })
+      .then(_ => {});
   }
 }
-
