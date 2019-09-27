@@ -181,9 +181,7 @@ describe("Transposit", () => {
       await transposit.handleSignIn();
     } catch (e) {
       expect(e).toBeInstanceOf(APIError);
-      expect(e.message).toBe(
-        "API call failed in an unexpected way. Try this operation again.",
-      );
+      expect(e.message).toBe(INTERNAL_ERROR_MESSAGE);
     }
   });
 
@@ -342,7 +340,7 @@ describe("Transposit", () => {
     );
   });
 
-  it.only("run an operation and throws errors", async () => {
+  it("run an operation and throws errors", async () => {
     expect.assertions(2);
 
     makeSignedIn(accessToken);
