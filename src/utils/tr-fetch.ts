@@ -46,9 +46,10 @@ export function trfetch<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
   });
 }
 
+// @VisibleForTesting
+export const INTERNAL_ERROR_MESSAGE: string =
+  "API call failed in an unexpected way. Try again.";
+
 function makeInternalError(response: Response): APIError {
-  return new APIError(
-    "API call failed in an unexpected way. Try this operation again.",
-    response,
-  );
+  return new APIError(INTERNAL_ERROR_MESSAGE, response);
 }

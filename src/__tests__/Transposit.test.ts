@@ -32,10 +32,8 @@ import {
   setHref,
 } from "../test/test-utils";
 import { SignInSuccess, Transposit } from "../Transposit";
+import { INTERNAL_ERROR_MESSAGE } from "../utils/tr-fetch";
 jest.mock("../signin/pkce-helper");
-
-// todo delete this?
-// jest.unmock("../utils/tr-fetch.ts");
 
 const BACKEND_ORIGIN: string = "https://arbys-beef-xyz12.transposit.io";
 function backendUri(path: string = ""): string {
@@ -359,9 +357,7 @@ describe("Transposit", () => {
       await transposit.run("hello_world");
     } catch (e) {
       expect(e).toBeInstanceOf(APIError);
-      expect(e.message).toEqual(
-        "API call failed in an unexpected way. Try this operation again.",
-      );
+      expect(e.message).toEqual(INTERNAL_ERROR_MESSAGE);
     }
   });
 });
