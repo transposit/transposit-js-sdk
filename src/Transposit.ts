@@ -146,7 +146,7 @@ export class Transposit {
   async makeCallJson<T>(
     method: string,
     path: string,
-    queryParams: any,
+    queryParams?: any,
     params?: any,
   ): Promise<T> {
     const response = await this.makeCall(method, path, queryParams, params);
@@ -156,8 +156,8 @@ export class Transposit {
   async makeCall(
     method: string,
     path: string,
-    queryParams: any,
-    params?: any,
+    queryParams: any = {},
+    params: any = {},
   ): Promise<Response> {
     const headers: HeadersInit = {
       "Content-Type": "application/json",

@@ -16,7 +16,6 @@
 
 /**
  * Represents a key/value store, such as stash, env, etc.
- * @export
  * @interface KeyValueStore
  */
 export interface KeyValueStore<T> {
@@ -27,24 +26,4 @@ export interface KeyValueStore<T> {
 export interface MutableKeyValueStore<T> extends KeyValueStore<T> {
   put(key: string, value: T): Promise<void>;
   remove(key: string): Promise<void>;
-}
-
-/**
- * Represents a key and a value stored in a key/value store.
- * @export
- * @interface KeyValuePair
- */
-export interface KeyValuePair<T> {
-  /**
-   *
-   * @type {string}
-   * @memberof KeyValuePair
-   */
-  key: string;
-  /**
-   *
-   * @type {T}
-   * @memberof KeyValuePair
-   */
-  value: T;
 }

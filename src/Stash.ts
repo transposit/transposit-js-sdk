@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, 2019 Transposit Corporation. All Rights Reserved.
+ * Copyright 2019 Transposit Corporation. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 
 import { Transposit } from ".";
-import { KeyValuePair, MutableKeyValueStore } from "./KeyValueStore";
+import { MutableKeyValueStore } from "./KeyValueStore";
 
 export class Stash implements MutableKeyValueStore<any> {
   private transposit: Transposit;
@@ -24,36 +24,20 @@ export class Stash implements MutableKeyValueStore<any> {
   }
 
   async listKeys(): Promise<string[]> {
-    const pairs = await this.transposit.makeCallJson<KeyValuePair<any>[]>(
-      "GET",
-      "/api/v1/stash",
-      {},
-    );
-    return pairs.map(pair => pair.key);
+    return this.transposit.makeCallJson<string[]>("GET", "/api/v1/stash");
   }
 
-  async get(keyName: string): Promise<any> {
-    const pairs = await this.transposit.makeCallJson<KeyValuePair<any>[]>(
-      "GET",
-      "/api/v1/stash",
-      { keyName },
-    );
-    if (pairs.length === 0) {
-      return null;
-    } else {
-      return pairs[0].value;
-    }
+  async get(key: string): Promise<any> {
+    return await this.transposit.makeCallJson<any>("GET", `/api/v1/stash${key}`);
   }
 
   async put(key: string, value: any): Promise<void> {
-    return this.transposit
-      .makeCall("POST", "/api/v1/stash", {}, { key, value })
-      .then(_ => undefined);
+    await this.transposit.makeCall("POST", `/api/v1/stash/${key}`, {}, value)
+    return;
   }
 
-  async remove(keyName: string): Promise<void> {
-    return this.transposit
-      .makeCall("DELETE", "/api/v1/stash", { keyName })
-      .then(_ => undefined);
+  async remove(key: string): Promise<void> {
+    await this.transposit.makeCall("DELETE", `/api/v1/stash/${key}`);
+    return;
   }
 }
