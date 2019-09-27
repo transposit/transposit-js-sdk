@@ -31,6 +31,7 @@ import {
   setHref,
 } from "../test/test-utils";
 import { SignInSuccess, Transposit } from "../Transposit";
+import { APIError } from "../errors/APIError";
 jest.mock("../signin/pkce-helper");
 
 const BACKEND_ORIGIN: string = "https://arbys-beef-xyz12.transposit.io";
@@ -188,7 +189,7 @@ describe("Transposit", () => {
     setHref(FRONTEND_ORIGIN, "/handle-signin", `?code=some-code-to-trade`);
 
     (window.fetch as jest.Mock).mockReturnValueOnce(
-      Promise.reject(new Error("Network error")),
+      Promise.reject(new TypeError("Network error")),
     );
 
     const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
@@ -196,6 +197,7 @@ describe("Transposit", () => {
     try {
       await transposit.handleSignIn();
     } catch (e) {
+      expect(e).toBeInstanceOf(TypeError);
       expect(e.message).toBe("Network error");
     }
   });
@@ -350,6 +352,7 @@ describe("Transposit", () => {
     try {
       await transposit.run("hello_world");
     } catch (e) {
+      expect(e).toBeInstanceOf(APIError);
       expect(e.statusText).toEqual("Bad Request");
     }
   });

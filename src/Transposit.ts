@@ -15,6 +15,7 @@
  */
 
 import { EndRequestLog } from ".";
+import { SDKError } from "./errors/SDKError";
 import { popCodeVerifier, pushCodeVerifier } from "./signin/pkce-helper";
 import {
   clearPersistedData,
@@ -24,6 +25,7 @@ import {
 } from "./signin/token";
 import { User } from "./signin/user";
 import { chompSlash, formUrlEncode, hereWithoutSearch } from "./utils";
+import { trfetch } from "./utils/tr-fetch";
 
 export class Transposit {
   private hostedAppOrigin: string;
@@ -46,7 +48,7 @@ export class Transposit {
 
   private assertIsSignedIn(): void {
     if (!this.accessToken) {
-      throw new Error(
+      throw new SDKError(
         "This method can only be called if the user is signed in",
       );
     }
@@ -82,7 +84,7 @@ export class Transposit {
     const searchParams = new URLSearchParams(window.location.search);
 
     if (!searchParams.has("code")) {
-      throw new Error(
+      throw new SDKError(
         "code query parameter could not be found. This method should only be called after redirection during sign-in.",
       );
     }
@@ -92,22 +94,21 @@ export class Transposit {
 
     const codeVerifier = popCodeVerifier();
 
-    const response = await fetch(this.uri(`/login/authorize/token`), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+    const tokenResponse = await trfetch<TokenResponse>(
+      this.uri(`/login/authorize/token`),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: formUrlEncode({
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: hereWithoutSearch(),
+          code_verifier: codeVerifier,
+        }),
       },
-      body: formUrlEncode({
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: hereWithoutSearch(),
-        code_verifier: codeVerifier,
-      }),
-    });
-    if (!response.ok) {
-      throw Error(response.statusText);
-    }
-    const tokenResponse = (await response.json()) as TokenResponse;
+    );
 
     // Perform sign-in
 
@@ -139,18 +140,13 @@ export class Transposit {
   async loadUser(): Promise<User> {
     this.assertIsSignedIn();
 
-    const response = await fetch(this.uri("/api/v1/user"), {
+    return await trfetch<User>(this.uri("/api/v1/user"), {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${this.accessToken}`,
       },
     });
-    if (!response.ok) {
-      throw response;
-    }
-
-    return (await response.json()) as User;
   }
 
   async run(
@@ -164,18 +160,16 @@ export class Transposit {
       headers.Authorization = `Bearer ${this.accessToken}`;
     }
 
-    const response = await fetch(this.uri(`/api/v1/execute/${operationId}`), {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        parameters,
-      }),
-    });
-    if (!response.ok) {
-      throw response;
-    }
-
-    return (await response.json()) as EndRequestLog;
+    return await trfetch<EndRequestLog>(
+      this.uri(`/api/v1/execute/${operationId}`),
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          parameters,
+        }),
+      },
+    );
   }
 }
 
