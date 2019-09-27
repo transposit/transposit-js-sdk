@@ -48,7 +48,7 @@ export function trfetch<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
 
 function makeInternalError(response: Response): APIError {
   return new APIError(
-    "An internal error occurred. Try this operation again.",
+    "API call failed in an unexpected way. Try this operation again.",
     response,
   );
 }

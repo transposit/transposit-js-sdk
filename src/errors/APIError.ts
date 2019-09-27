@@ -26,5 +26,8 @@ export class APIError extends SDKError {
     super(message);
     this.name = "APIError";
     this.response = response;
+
+    // https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
+    Object.setPrototypeOf(this, APIError.prototype);
   }
 }

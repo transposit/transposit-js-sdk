@@ -15,11 +15,14 @@
  */
 
 /**
- * An SDKError is an Error that always have a user-visible message.
+ * An SDKError is an Error that always has a user-visible message.
  */
 export class SDKError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "SDKError";
+
+    // https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
+    Object.setPrototypeOf(this, SDKError.prototype);
   }
 }

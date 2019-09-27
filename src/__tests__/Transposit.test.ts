@@ -16,6 +16,7 @@
 
 import * as MockDate from "mockdate";
 import { EndRequestLog } from "../EndRequestLog";
+import { APIError } from "../errors/APIError";
 import {
   Claims,
   loadAccessToken,
@@ -31,8 +32,10 @@ import {
   setHref,
 } from "../test/test-utils";
 import { SignInSuccess, Transposit } from "../Transposit";
-import { APIError } from "../errors/APIError";
 jest.mock("../signin/pkce-helper");
+
+// todo delete this?
+// jest.unmock("../utils/tr-fetch.ts");
 
 const BACKEND_ORIGIN: string = "https://arbys-beef-xyz12.transposit.io";
 function backendUri(path: string = ""): string {
@@ -164,7 +167,7 @@ describe("Transposit", () => {
   });
 
   it("can't complete sign-in if token endpoint returns 4XX", async () => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     setHref(FRONTEND_ORIGIN, "/handle-signin", `?code=some-code-to-trade`);
 
@@ -179,12 +182,15 @@ describe("Transposit", () => {
     try {
       await transposit.handleSignIn();
     } catch (e) {
-      expect(e.message).toBe("Bad Request");
+      expect(e).toBeInstanceOf(APIError);
+      expect(e.message).toBe(
+        "API call failed in an unexpected way. Try this operation again.",
+      );
     }
   });
 
   it("can't complete sign-in if token endpoint network errors", async () => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     setHref(FRONTEND_ORIGIN, "/handle-signin", `?code=some-code-to-trade`);
 
@@ -338,14 +344,14 @@ describe("Transposit", () => {
     );
   });
 
-  it("run an operation and throws errors", async () => {
-    expect.assertions(1);
+  it.only("run an operation and throws errors", async () => {
+    expect.assertions(2);
 
     makeSignedIn(accessToken);
     const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
 
     (window.fetch as jest.Mock).mockReturnValueOnce(
-      Promise.reject(
+      Promise.resolve(
         new Response(null, { status: 400, statusText: "Bad Request" }),
       ),
     );
@@ -353,7 +359,9 @@ describe("Transposit", () => {
       await transposit.run("hello_world");
     } catch (e) {
       expect(e).toBeInstanceOf(APIError);
-      expect(e.statusText).toEqual("Bad Request");
+      expect(e.message).toEqual(
+        "API call failed in an unexpected way. Try this operation again.",
+      );
     }
   });
 });
