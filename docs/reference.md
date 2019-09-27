@@ -123,9 +123,9 @@ transposit.getUserName();
 
 `transposit.getUserEmail()`
 
-Returns the email address of the signed-in user.
+Returns the email address of the signed in user.
 
-**Returns** (String): The email address of the signed-in user
+**Returns** (String): The email address of the signed in user
 
 **Example**
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, 2019 Transposit Corporation. All Rights Reserved.
+ * Copyright 2019 Transposit Corporation. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
-export * from "./EndRequestLog";
-export * from "./Transposit";
-export { User } from "./signin/user";
+export interface User {
+  name: string;
+  email: string;
+}
