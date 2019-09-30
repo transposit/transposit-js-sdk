@@ -1,5 +1,3 @@
-import { APIError } from "../errors/APIError";
-
 /*
  * Copyright 2019 Transposit Corporation. All Rights Reserved.
  *
@@ -15,6 +13,8 @@ import { APIError } from "../errors/APIError";
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import { APIError } from "../errors/APIError";
 
 /**
  * trfetch() is a thin-wrapper around native fetch().
