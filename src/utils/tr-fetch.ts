@@ -19,7 +19,7 @@ import { APIError } from "../errors/APIError";
 /**
  * trfetch() is a thin-wrapper around native fetch().
  * It treats non-2XX responses as failures.
- * It assumes response bodies should be parsed a JSON.
+ * It assumes response bodies should be parsed as JSON.
  */
 export function trfetch<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
   return fetch(input, init).then((response: Response) => {
