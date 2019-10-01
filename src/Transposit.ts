@@ -147,9 +147,10 @@ export class Transposit {
     method: string,
     path: string,
     queryParams?: any,
-    params?: any,
+    bodyParams?: any,
   ): Promise<T> {
-    const response = await this.makeCall(method, path, queryParams, params);
+    const response = await this.makeCall(method, path, queryParams, bodyParams);
+    console.log(response);
     return await response.json();
   }
 
@@ -157,7 +158,7 @@ export class Transposit {
     method: string,
     path: string,
     queryParams: any = {},
-    params: any = {},
+    bodyParams?: any,
   ): Promise<Response> {
     const headers: HeadersInit = {
       "Content-Type": "application/json",
@@ -171,7 +172,7 @@ export class Transposit {
       url.searchParams.append(key, queryParams[key]),
     );
 
-    const body = params == null ? null : JSON.stringify(params);
+    const body = bodyParams == null ? null : JSON.stringify(bodyParams);
 
     const response = await fetch(url.href, {
       method,

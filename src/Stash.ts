@@ -24,20 +24,31 @@ export class Stash implements MutableKeyValueStore<any> {
   }
 
   async listKeys(): Promise<string[]> {
-    return this.transposit.makeCallJson<string[]>("GET", "/api/v1/stash");
+    return this.transposit.makeCallJson<string[]>("GET", "/api/v1/stash/keys");
   }
 
   async get(key: string): Promise<any> {
-    return await this.transposit.makeCallJson<any>("GET", `/api/v1/stash${key}`);
+    return await this.transposit.makeCallJson<any>(
+      "GET",
+      "/api/v1/stash/value",
+      { keyName: key },
+    );
   }
 
   async put(key: string, value: any): Promise<void> {
-    await this.transposit.makeCall("POST", `/api/v1/stash/${key}`, {}, value)
+    await this.transposit.makeCall(
+      "POST",
+      "/api/v1/stash/value",
+      { keyName: key },
+      value,
+    );
     return;
   }
 
   async remove(key: string): Promise<void> {
-    await this.transposit.makeCall("DELETE", `/api/v1/stash/${key}`);
+    await this.transposit.makeCall("DELETE", "/api/v1/stash/value", {
+      keyName: key,
+    });
     return;
   }
 }
