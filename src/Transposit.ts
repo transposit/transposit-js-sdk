@@ -176,7 +176,6 @@ export class Transposit {
     bodyParams?: any,
   ): Promise<T> {
     const response = await this.makeCall(method, path, queryParams, bodyParams);
-    console.log(response);
     return await response.json();
   }
 
