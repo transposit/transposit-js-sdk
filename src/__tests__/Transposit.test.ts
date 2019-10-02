@@ -16,6 +16,7 @@
 
 import * as MockDate from "mockdate";
 import { EndRequestLog } from "../EndRequestLog";
+import { APIError } from "../errors/APIError";
 import {
   Claims,
   loadAccessToken,
@@ -31,6 +32,7 @@ import {
   setHref,
 } from "../test/test-utils";
 import { SignInSuccess, Transposit } from "../Transposit";
+import { INTERNAL_ERROR_MESSAGE } from "../utils/tr-fetch";
 jest.mock("../signin/pkce-helper");
 
 const BACKEND_ORIGIN: string = "https://arbys-beef-xyz12.transposit.io";
@@ -163,7 +165,7 @@ describe("Transposit", () => {
   });
 
   it("can't complete sign-in if token endpoint returns 4XX", async () => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     setHref(FRONTEND_ORIGIN, "/handle-signin", `?code=some-code-to-trade`);
 
@@ -178,17 +180,18 @@ describe("Transposit", () => {
     try {
       await transposit.handleSignIn();
     } catch (e) {
-      expect(e.message).toBe("Bad Request");
+      expect(e).toBeInstanceOf(APIError);
+      expect(e.message).toBe(INTERNAL_ERROR_MESSAGE);
     }
   });
 
   it("can't complete sign-in if token endpoint network errors", async () => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     setHref(FRONTEND_ORIGIN, "/handle-signin", `?code=some-code-to-trade`);
 
     (window.fetch as jest.Mock).mockReturnValueOnce(
-      Promise.reject(new Error("Network error")),
+      Promise.reject(new TypeError("Network error")),
     );
 
     const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
@@ -196,6 +199,7 @@ describe("Transposit", () => {
     try {
       await transposit.handleSignIn();
     } catch (e) {
+      expect(e).toBeInstanceOf(TypeError);
       expect(e.message).toBe("Network error");
     }
   });
@@ -337,20 +341,21 @@ describe("Transposit", () => {
   });
 
   it("run an operation and throws errors", async () => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     makeSignedIn(accessToken);
     const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
 
     (window.fetch as jest.Mock).mockReturnValueOnce(
-      Promise.reject(
+      Promise.resolve(
         new Response(null, { status: 400, statusText: "Bad Request" }),
       ),
     );
     try {
       await transposit.run("hello_world");
     } catch (e) {
-      expect(e.statusText).toEqual("Bad Request");
+      expect(e).toBeInstanceOf(APIError);
+      expect(e.message).toEqual(INTERNAL_ERROR_MESSAGE);
     }
   });
 });

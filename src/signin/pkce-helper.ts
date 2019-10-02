@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 // This code inspired by: https://developer.okta.com/blog/2019/05/01/is-the-oauth-implicit-flow-dead
+
+import { SDKError } from "../errors/SDKError";
 
 const PKCE_KEY = "TRANPOSIT_PKCE";
 
@@ -51,7 +52,7 @@ export async function pushCodeVerifier(): Promise<string> {
 export function popCodeVerifier(): string {
   const maybeCodeVerifier: string | null = localStorage.getItem(PKCE_KEY);
   if (!maybeCodeVerifier) {
-    throw new Error("PKCE state could not be found.");
+    throw new SDKError("PKCE state could not be found.");
   }
   localStorage.removeItem(PKCE_KEY);
   return maybeCodeVerifier;

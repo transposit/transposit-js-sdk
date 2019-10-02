@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+import { APIError } from "./errors/ApiError";
 import { EndRequestLog, Stash } from ".";
+import { SDKError } from "./errors/SDKError";
 import { popCodeVerifier, pushCodeVerifier } from "./signin/pkce-helper";
 import {
   clearPersistedData,
@@ -24,6 +26,7 @@ import {
 } from "./signin/token";
 import { User } from "./signin/user";
 import { chompSlash, formUrlEncode, hereWithoutSearch } from "./utils";
+import { trfetch } from "./utils/tr-fetch";
 
 export class Transposit {
   private hostedAppOrigin: string;
@@ -46,7 +49,7 @@ export class Transposit {
 
   private assertIsSignedIn(): void {
     if (!this.accessToken) {
-      throw new Error(
+      throw new SDKError(
         "This method can only be called if the user is signed in",
       );
     }
@@ -82,7 +85,7 @@ export class Transposit {
     const searchParams = new URLSearchParams(window.location.search);
 
     if (!searchParams.has("code")) {
-      throw new Error(
+      throw new SDKError(
         "code query parameter could not be found. This method should only be called after redirection during sign-in.",
       );
     }
@@ -92,22 +95,18 @@ export class Transposit {
 
     const codeVerifier = popCodeVerifier();
 
-    const response = await fetch(this.uri(`/login/authorize/token`), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: formUrlEncode({
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: hereWithoutSearch(),
-        code_verifier: codeVerifier,
-      }),
-    });
-    if (!response.ok) {
-      throw Error(response.statusText);
-    }
-    const tokenResponse = (await response.json()) as TokenResponse;
+    const headers = { "Content-Type": "application/x-www-form-urlencoded" };
+    const body = {
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: hereWithoutSearch(),
+      code_verifier: codeVerifier,
+    };
+    const tokenResponse = await this.makeCallJson<TokenResponse>(
+      "POST",
+      "/login/authorize/token",
+      { headers, body },
+    );
 
     // Perform sign-in
 
@@ -143,18 +142,10 @@ export class Transposit {
   async loadUser(): Promise<User> {
     this.assertIsSignedIn();
 
-    const response = await fetch(this.uri("/api/v1/user"), {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.accessToken}`,
-      },
-    });
-    if (!response.ok) {
-      throw response;
-    }
-
-    return (await response.json()) as User;
+    return await this.makeCallJson<User>(
+      "GET",
+      "/api/v1/user",
+    );
   }
 
   async run(
@@ -164,53 +155,68 @@ export class Transposit {
     return this.makeCallJson<EndRequestLog>(
       "POST",
       `/api/v1/execute/${operationId}`,
-      {},
-      { parameters },
+      { body: { parameters } },
     );
   }
 
   async makeCallJson<T>(
     method: string,
     path: string,
-    queryParams?: any,
-    bodyParams?: any,
+    httpParams: HttpParams = {},
   ): Promise<T> {
-    const response = await this.makeCall(method, path, queryParams, bodyParams);
-    return await response.json();
+    const response = await this.makeCall(method, path, httpParams);
+    return response.json().then(
+      (x) => x,
+      () => {
+        throw new APIError("Failed to read response body", response);
+      }
+    );
   }
 
   async makeCall(
     method: string,
     path: string,
-    queryParams: any = {},
-    bodyParams?: any,
+    { queryParams,
+      body,
+      headers }: HttpParams = {},
   ): Promise<Response> {
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
-    };
-    if (this.accessToken) {
-      headers.Authorization = `Bearer ${this.accessToken}`;
+
+    if (headers == null) {
+      headers = {
+        "Content-Type": "application/json",
+      };
+      if (this.accessToken) {
+        headers.Authorization = `Bearer ${this.accessToken}`;
+      }
     }
 
     const url = new URL(path, this.hostedAppOrigin);
-    Object.keys(queryParams).forEach(key =>
-      url.searchParams.append(key, queryParams[key]),
-    );
-
-    const body = bodyParams == null ? null : JSON.stringify(bodyParams);
-
-    const response = await fetch(url.href, {
-      method,
-      headers,
-      body,
-    });
-
-    if (!response.ok) {
-      throw response;
+    if (queryParams != null) {
+      Object.keys(queryParams).forEach(key =>
+        url.searchParams.append(key, queryParams[key]),
+      );
     }
+
+    let bodyEncoder;
+    if (headers["Content-Type"] == "application/x-www-form-urlencoded") {
+      bodyEncoder = formUrlEncode;
+    } else {
+      bodyEncoder = JSON.stringify;
+    }
+
+    const response = await trfetch(url.href, Object.assign( 
+      { method, headers },
+      body === null ? null : { body: bodyEncoder(body) }, // Only include body if non-null  
+    ));
 
     return response;
   }
+}
+
+interface HttpParams {
+  queryParams?: any,
+  body?: any,
+  headers?: any,
 }
 
 export interface SignInSuccess {
