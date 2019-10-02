@@ -22,6 +22,7 @@ import {
   persistAccessToken,
   TokenResponse,
 } from "../signin/token";
+import { User } from "../signin/user";
 import {
   createUnsignedJwt,
   NOW,
@@ -53,9 +54,13 @@ describe("Transposit", () => {
     setHref(FRONTEND_ORIGIN, "/", "");
   });
 
+  const user: User = {
+    name: "Kernel Sanders",
+    email: "sanders@kernel.com",
+  };
   const claims: Claims = Object.freeze({
     iss: BACKEND_ORIGIN,
-    sub: "jplace@transposit.com",
+    sub: `google|${user.email}`,
     exp: NOW_PLUS_3_DAYS / 1000,
     iat: NOW_MINUS_3_DAYS / 1000,
   });
@@ -220,6 +225,46 @@ describe("Transposit", () => {
     );
   });
 
+  it("doesn't load a user if not signed in", async () => {
+    expect.assertions(1);
+
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+
+    try {
+      await transposit.loadUser();
+    } catch (e) {
+      expect(e.message).toBe(
+        "This method can only be called if the user is signed in",
+      );
+    }
+  });
+
+  it("loads a user", async () => {
+    expect.assertions(2);
+
+    makeSignedIn(accessToken);
+    const transposit: Transposit = new Transposit(BACKEND_ORIGIN);
+
+    (window.fetch as jest.Mock).mockReturnValueOnce(
+      Promise.resolve(new Response(JSON.stringify(user))),
+    );
+
+    const loadedUser: User = await transposit.loadUser();
+
+    expect(loadedUser).toEqual(user);
+    expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
+      "https://arbys-beef-xyz12.transposit.io/api/v1/user",
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization:
+            "Bearer eyJhbGciOiJub25lIn0=.eyJpc3MiOiJodHRwczovL2FyYnlzLWJlZWYteHl6MTIudHJhbnNwb3NpdC5pbyIsInN1YiI6Imdvb2dsZXxzYW5kZXJzQGtlcm5lbC5jb20iLCJleHAiOjE1MjI1MTQ1MTksImlhdCI6MTUyMTk5NjExOX0=.",
+        },
+      },
+    );
+  });
+
   it("runs operation without sign-in", async () => {
     expect.assertions(2);
 
@@ -284,7 +329,7 @@ describe("Transposit", () => {
         headers: {
           "Content-Type": "application/json",
           Authorization:
-            "Bearer eyJhbGciOiJub25lIn0=.eyJpc3MiOiJodHRwczovL2FyYnlzLWJlZWYteHl6MTIudHJhbnNwb3NpdC5pbyIsInN1YiI6ImpwbGFjZUB0cmFuc3Bvc2l0LmNvbSIsImV4cCI6MTUyMjUxNDUxOSwiaWF0IjoxNTIxOTk2MTE5fQ==.",
+            "Bearer eyJhbGciOiJub25lIn0=.eyJpc3MiOiJodHRwczovL2FyYnlzLWJlZWYteHl6MTIudHJhbnNwb3NpdC5pbyIsInN1YiI6Imdvb2dsZXxzYW5kZXJzQGtlcm5lbC5jb20iLCJleHAiOjE1MjI1MTQ1MTksImlhdCI6MTUyMTk5NjExOX0=.",
         },
         body: '{"parameters":{}}',
       },

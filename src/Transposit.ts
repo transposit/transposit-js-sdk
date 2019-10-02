@@ -22,6 +22,7 @@ import {
   persistAccessToken,
   TokenResponse,
 } from "./signin/token";
+import { User } from "./signin/user";
 import { chompSlash, formUrlEncode, hereWithoutSearch } from "./utils";
 
 export class Transposit {
@@ -41,6 +42,14 @@ export class Transposit {
 
   private load(): void {
     this.accessToken = loadAccessToken();
+  }
+
+  private assertIsSignedIn(): void {
+    if (!this.accessToken) {
+      throw new Error(
+        "This method can only be called if the user is signed in",
+      );
+    }
   }
 
   isSignedIn(): boolean {
@@ -131,6 +140,23 @@ export class Transposit {
     return new Stash(this);
   }
 
+  async loadUser(): Promise<User> {
+    this.assertIsSignedIn();
+
+    const response = await fetch(this.uri("/api/v1/user"), {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+    });
+    if (!response.ok) {
+      throw response;
+    }
+
+    return (await response.json()) as User;
+  }
+
   async run(
     operationId: string,
     parameters: OperationParameters = {},
@@ -180,11 +206,11 @@ export class Transposit {
       body,
     });
 
-    if (response.status >= 200 && response.status < 300) {
-      return response;
-    } else {
+    if (!response.ok) {
       throw response;
     }
+
+    return response;
   }
 }
 
