@@ -15,7 +15,6 @@
  */
 
 export * from "./EndRequestLog";
-export { KeyValueStore, MutableKeyValueStore } from "./KeyValueStore";
 export * from "./Transposit";
 export * from "./Stash";
 export { User } from "./signin/user";

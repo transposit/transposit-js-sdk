@@ -15,9 +15,8 @@
  */
 
 import { Transposit } from ".";
-import { MutableKeyValueStore } from "./KeyValueStore";
 
-export class Stash implements MutableKeyValueStore<any> {
+export class Stash {
   private transposit: Transposit;
   constructor(transposit: Transposit) {
     this.transposit = transposit;
