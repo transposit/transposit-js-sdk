@@ -28,13 +28,11 @@ describe("tr-fetch", () => {
     expect.assertions(1);
 
     const body: {} = { everything: "is", a: "okay!" };
-    const expected =  new Response(JSON.stringify(body), {
-          status: 200,
-        });
+    const expected = new Response(JSON.stringify(body), {
+      status: 200,
+    });
 
-    (window.fetch as jest.Mock).mockReturnValueOnce(
-      Promise.resolve(expected),
-    );
+    (window.fetch as jest.Mock).mockReturnValueOnce(Promise.resolve(expected));
 
     const actual = await trfetch(unusedRequestInfo);
 
@@ -45,12 +43,10 @@ describe("tr-fetch", () => {
     expect.assertions(1);
 
     const expected = new Response("totaljunk", {
-          status: 200,
-        });
+      status: 200,
+    });
 
-    (window.fetch as jest.Mock).mockReturnValueOnce(
-      Promise.resolve(expected),
-    );
+    (window.fetch as jest.Mock).mockReturnValueOnce(Promise.resolve(expected));
 
     const actual = await trfetch(unusedRequestInfo);
     expect(actual).toEqual(expected);

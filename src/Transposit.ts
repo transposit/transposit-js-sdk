@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { APIError } from "./errors/ApiError";
 import { EndRequestLog, Stash } from ".";
+import { APIError } from "./errors/APIError";
 import { SDKError } from "./errors/SDKError";
 import { popCodeVerifier, pushCodeVerifier } from "./signin/pkce-helper";
 import {
@@ -142,10 +142,7 @@ export class Transposit {
   async loadUser(): Promise<User> {
     this.assertIsSignedIn();
 
-    return await this.makeCallJson<User>(
-      "GET",
-      "/api/v1/user",
-    );
+    return await this.makeCallJson<User>("GET", "/api/v1/user");
   }
 
   async run(
@@ -166,21 +163,18 @@ export class Transposit {
   ): Promise<T> {
     const response = await this.makeCall(method, path, httpParams);
     return response.json().then(
-      (x) => x,
+      x => x,
       () => {
         throw new APIError("Failed to read response body", response);
-      }
+      },
     );
   }
 
   async makeCall(
     method: string,
     path: string,
-    { queryParams,
-      body,
-      headers }: HttpParams = {},
+    { queryParams, body, headers }: HttpParams = {},
   ): Promise<Response> {
-
     if (headers == null) {
       headers = {
         "Content-Type": "application/json",
@@ -198,25 +192,28 @@ export class Transposit {
     }
 
     let bodyEncoder;
-    if (headers["Content-Type"] == "application/x-www-form-urlencoded") {
+    if (headers["Content-Type"] === "application/x-www-form-urlencoded") {
       bodyEncoder = formUrlEncode;
     } else {
       bodyEncoder = JSON.stringify;
     }
 
-    const response = await trfetch(url.href, Object.assign( 
-      { method, headers },
-      body === null ? null : { body: bodyEncoder(body) }, // Only include body if non-null  
-    ));
+    const response = await trfetch(
+      url.href,
+      Object.assign(
+        { method, headers },
+        body === null ? null : { body: bodyEncoder(body) }, // Only include body if non-null
+      ),
+    );
 
     return response;
   }
 }
 
 interface HttpParams {
-  queryParams?: any,
-  body?: any,
-  headers?: any,
+  queryParams?: any;
+  body?: any;
+  headers?: any;
 }
 
 export interface SignInSuccess {

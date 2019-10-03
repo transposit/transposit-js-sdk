@@ -358,4 +358,30 @@ describe("Transposit", () => {
       expect(e.message).toEqual(INTERNAL_ERROR_MESSAGE);
     }
   });
+
+  it("deserializes good json in 2XX response", async () => {
+    expect.assertions(1);
+
+    const expected = { everything: "is", a: "okay!" };
+    (window.fetch as jest.Mock).mockReturnValueOnce(
+      Promise.resolve(new Response(JSON.stringify(expected), { status: 200 })),
+    );
+
+    const transposit = new Transposit(BACKEND_ORIGIN);
+    const actual = await transposit.makeCallJson<{}>("GET", "/endpoint");
+
+    expect(actual).toEqual(expected);
+  });
+
+  it("invalid json throws error", async () => {
+    expect.assertions(1);
+
+    const response = new Response("totaljunk", { status: 200 });
+    (window.fetch as jest.Mock).mockReturnValueOnce(Promise.resolve(response));
+
+    const transposit = new Transposit(BACKEND_ORIGIN);
+    return expect(
+      transposit.makeCallJson<{}>("GET", "/endpoint"),
+    ).rejects.toThrow(new APIError("Failed to read response body", response));
+  });
 });
