@@ -21,29 +21,27 @@ import { APIError } from "../errors/APIError";
  * It treats non-2XX responses as failures.
  * It assumes response bodies should be parsed as JSON.
  */
-export function trfetch<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
-  return fetch(input, init).then((response: Response) => {
-    if (response.ok) {
-      return response.json().then(
-        x => x as T,
-        () => {
-          throw makeInternalError(response);
-        },
-      );
-    } else {
-      return response.json().then(
-        (body: any) => {
-          if (typeof body.message === "string") {
-            throw new APIError(body.message, response);
-          }
-          throw makeInternalError(response);
-        },
-        () => {
-          throw makeInternalError(response);
-        },
-      );
-    }
-  });
+export async function trfetch(
+  input: RequestInfo,
+  init?: RequestInit,
+): Promise<Response> {
+  const response = await fetch(input, init);
+  if (response.ok) {
+    return response;
+  } else {
+    const error = await response.json().then(
+      (body: any) => {
+        if (typeof body.message === "string") {
+          return new APIError(body.message, response);
+        }
+        return makeInternalError(response);
+      },
+      () => {
+        return makeInternalError(response);
+      },
+    );
+    throw error;
+  }
 }
 
 // @VisibleForTesting

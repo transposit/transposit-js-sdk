@@ -16,4 +16,5 @@
 
 export * from "./EndRequestLog";
 export * from "./Transposit";
+export * from "./Stash";
 export { User } from "./signin/user";

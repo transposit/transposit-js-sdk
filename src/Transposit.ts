@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { EndRequestLog } from ".";
+import { EndRequestLog, Stash } from ".";
+import { APIError } from "./errors/APIError";
 import { SDKError } from "./errors/SDKError";
 import { popCodeVerifier, pushCodeVerifier } from "./signin/pkce-helper";
 import {
@@ -94,20 +95,17 @@ export class Transposit {
 
     const codeVerifier = popCodeVerifier();
 
-    const tokenResponse = await trfetch<TokenResponse>(
-      this.uri(`/login/authorize/token`),
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: formUrlEncode({
-          grant_type: "authorization_code",
-          code,
-          redirect_uri: hereWithoutSearch(),
-          code_verifier: codeVerifier,
-        }),
-      },
+    const headers = { "Content-Type": "application/x-www-form-urlencoded" };
+    const body = {
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: hereWithoutSearch(),
+      code_verifier: codeVerifier,
+    };
+    const tokenResponse = await this.makeCallJson<TokenResponse>(
+      "POST",
+      "/login/authorize/token",
+      { headers, body },
     );
 
     // Perform sign-in
@@ -137,40 +135,85 @@ export class Transposit {
     );
   }
 
+  get stash() {
+    return new Stash(this);
+  }
+
   async loadUser(): Promise<User> {
     this.assertIsSignedIn();
 
-    return await trfetch<User>(this.uri("/api/v1/user"), {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.accessToken}`,
-      },
-    });
+    return await this.makeCallJson<User>("GET", "/api/v1/user");
   }
 
   async run(
     operationId: string,
     parameters: OperationParameters = {},
   ): Promise<EndRequestLog> {
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
-    };
-    if (this.accessToken) {
-      headers.Authorization = `Bearer ${this.accessToken}`;
-    }
+    return this.makeCallJson<EndRequestLog>(
+      "POST",
+      `/api/v1/execute/${operationId}`,
+      { body: { parameters } },
+    );
+  }
 
-    return await trfetch<EndRequestLog>(
-      this.uri(`/api/v1/execute/${operationId}`),
-      {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          parameters,
-        }),
+  async makeCallJson<T>(
+    method: string,
+    path: string,
+    httpParams: HttpParams = {},
+  ): Promise<T> {
+    const response = await this.makeCall(method, path, httpParams);
+    return response.json().then(
+      x => x,
+      () => {
+        throw new APIError("Failed to read response body", response);
       },
     );
   }
+
+  async makeCall(
+    method: string,
+    path: string,
+    { queryParams, body, headers }: HttpParams = {},
+  ): Promise<Response> {
+    if (headers == null) {
+      headers = {
+        "Content-Type": "application/json",
+      };
+      if (this.accessToken) {
+        headers.Authorization = `Bearer ${this.accessToken}`;
+      }
+    }
+
+    const url = new URL(path, this.hostedAppOrigin);
+    if (queryParams != null) {
+      Object.keys(queryParams).forEach(key =>
+        url.searchParams.append(key, queryParams[key]),
+      );
+    }
+
+    let bodyEncoder;
+    if (headers["Content-Type"] === "application/x-www-form-urlencoded") {
+      bodyEncoder = formUrlEncode;
+    } else {
+      bodyEncoder = JSON.stringify;
+    }
+
+    const response = await trfetch(
+      url.href,
+      Object.assign(
+        { method, headers },
+        body === null ? null : { body: bodyEncoder(body) }, // Only include body if non-null
+      ),
+    );
+
+    return response;
+  }
+}
+
+interface HttpParams {
+  queryParams?: any;
+  body?: any;
+  headers?: any;
 }
 
 export interface SignInSuccess {
