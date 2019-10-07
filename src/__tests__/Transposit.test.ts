@@ -448,24 +448,4 @@ describe("Transposit", () => {
       },
     );
   });
-
-  it("stash remove sends correct request", async () => {
-    expect.assertions(1);
-    const response = new Response("");
-
-    (window.fetch as jest.Mock).mockReturnValueOnce(Promise.resolve(response));
-    const transposit = new Transposit(BACKEND_ORIGIN);
-
-    await transposit.stash.remove("key");
-
-    expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
-      "https://arbys-beef-xyz12.transposit.io/api/v1/stash/value?keyName=key",
-      {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      },
-    );
-  });
 });

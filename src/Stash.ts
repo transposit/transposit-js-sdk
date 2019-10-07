@@ -43,12 +43,4 @@ export class Stash {
     });
     return;
   }
-
-  async remove(key: string): Promise<void> {
-    const queryParams = { keyName: key };
-    await this.transposit.makeCall("DELETE", "/api/v1/stash/value", {
-      queryParams,
-    });
-    return;
-  }
 }
