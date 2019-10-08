@@ -41,6 +41,5 @@ export class Stash {
       queryParams,
       body: value,
     });
-    return;
   }
 }
