@@ -175,7 +175,7 @@ export class Transposit {
     path: string,
     { queryParams, body, headers }: HttpParams = {},
   ): Promise<Response> {
-    if (headers == null) {
+    if (!headers) {
       headers = {
         "Content-Type": "application/json",
       };
