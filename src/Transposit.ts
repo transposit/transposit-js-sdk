@@ -211,9 +211,9 @@ export class Transposit {
 }
 
 interface HttpParams {
-  queryParams?: any;
   body?: any;
-  headers?: any;
+  headers?: { [s: string]: string };
+  queryParams?: { [s: string]: string };
 }
 
 export interface SignInSuccess {
