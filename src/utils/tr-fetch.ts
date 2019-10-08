@@ -29,17 +29,17 @@ export async function trfetch(
   if (response.ok) {
     return response;
   } else {
-    const error = await response.json().then(
-      (body: any) => {
-        if (typeof body.message === "string") {
-          return new APIError(body.message, response);
-        }
-        return makeInternalError(response);
-      },
-      () => {
-        return makeInternalError(response);
-      },
-    );
+    let error;
+    try {
+      const body = await response.json();
+      if (typeof body.message === "string") {
+        error = new APIError(body.message, response);
+      } else {
+        error = makeInternalError(response);
+      }
+    } catch (e) {
+      error = makeInternalError(response);
+    }
     throw error;
   }
 }
