@@ -456,4 +456,30 @@ describe("Transposit", () => {
       );
     });
   });
+
+  describe("env", () => {
+    it("env get sends correct request", async () => {
+      expect.assertions(2);
+      const expected = "someString";
+      const response = new Response('"someString"');
+
+      (window.fetch as jest.Mock).mockReturnValueOnce(
+        Promise.resolve(response),
+      );
+      const transposit = new Transposit(BACKEND_ORIGIN);
+
+      const actual = await transposit.env.get<string>("key");
+
+      expect(actual).toBe(expected);
+      expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
+        "https://arbys-beef-xyz12.transposit.io/api/v1/env/value?keyName=key",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    });
+  });
 });
