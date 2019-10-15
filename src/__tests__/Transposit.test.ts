@@ -385,67 +385,75 @@ describe("Transposit", () => {
     ).rejects.toThrow(new APIError("Failed to read response body", response));
   });
 
-  it("stash get sends correct request", async () => {
-    expect.assertions(2);
-    const expected = "someString";
-    const response = new Response('"someString"');
+  describe("stash", () => {
+    it("stash get sends correct request", async () => {
+      expect.assertions(2);
+      const expected = "someString";
+      const response = new Response('"someString"');
 
-    (window.fetch as jest.Mock).mockReturnValueOnce(Promise.resolve(response));
-    const transposit = new Transposit(BACKEND_ORIGIN);
+      (window.fetch as jest.Mock).mockReturnValueOnce(
+        Promise.resolve(response),
+      );
+      const transposit = new Transposit(BACKEND_ORIGIN);
 
-    const actual = await transposit.stash.get("key");
+      const actual = await transposit.stash.get("key");
 
-    expect(actual).toBe(expected);
-    expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
-      "https://arbys-beef-xyz12.transposit.io/api/v1/stash/value?keyName=key",
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
+      expect(actual).toBe(expected);
+      expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
+        "https://arbys-beef-xyz12.transposit.io/api/v1/stash/value?keyName=key",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      },
-    );
-  });
+      );
+    });
 
-  it("stash listKeys sends correct request", async () => {
-    expect.assertions(2);
-    const expected = ["a", "b", "c"];
-    const response = new Response(`["a", "b", "c"]`);
+    it("stash listKeys sends correct request", async () => {
+      expect.assertions(2);
+      const expected = ["a", "b", "c"];
+      const response = new Response(`["a", "b", "c"]`);
 
-    (window.fetch as jest.Mock).mockReturnValueOnce(Promise.resolve(response));
-    const transposit = new Transposit(BACKEND_ORIGIN);
+      (window.fetch as jest.Mock).mockReturnValueOnce(
+        Promise.resolve(response),
+      );
+      const transposit = new Transposit(BACKEND_ORIGIN);
 
-    const actual = await transposit.stash.listKeys();
+      const actual = await transposit.stash.listKeys();
 
-    expect(actual).toEqual(expected);
-    expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
-      "https://arbys-beef-xyz12.transposit.io/api/v1/stash/keys",
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
+      expect(actual).toEqual(expected);
+      expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
+        "https://arbys-beef-xyz12.transposit.io/api/v1/stash/keys",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      },
-    );
-  });
+      );
+    });
 
-  it("stash put sends correct request", async () => {
-    expect.assertions(1);
-    const response = new Response("");
+    it("stash put sends correct request", async () => {
+      expect.assertions(1);
+      const response = new Response("");
 
-    (window.fetch as jest.Mock).mockReturnValueOnce(Promise.resolve(response));
-    const transposit = new Transposit(BACKEND_ORIGIN);
+      (window.fetch as jest.Mock).mockReturnValueOnce(
+        Promise.resolve(response),
+      );
+      const transposit = new Transposit(BACKEND_ORIGIN);
 
-    await transposit.stash.put("key", "value");
-    expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
-      "https://arbys-beef-xyz12.transposit.io/api/v1/stash/value?keyName=key",
-      {
-        method: "POST",
-        body: `"value"`,
-        headers: {
-          "Content-Type": "application/json",
+      await transposit.stash.put("key", "value");
+      expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
+        "https://arbys-beef-xyz12.transposit.io/api/v1/stash/value?keyName=key",
+        {
+          method: "POST",
+          body: `"value"`,
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      },
-    );
+      );
+    });
   });
 });
