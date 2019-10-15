@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright 2018, 2019 Transposit Corporation. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -357,5 +357,103 @@ describe("Transposit", () => {
       expect(e).toBeInstanceOf(APIError);
       expect(e.message).toEqual(INTERNAL_ERROR_MESSAGE);
     }
+  });
+
+  it("deserializes good json in 2XX response", async () => {
+    expect.assertions(1);
+
+    const expected = { everything: "is", a: "okay!" };
+    (window.fetch as jest.Mock).mockReturnValueOnce(
+      Promise.resolve(new Response(JSON.stringify(expected), { status: 200 })),
+    );
+
+    const transposit = new Transposit(BACKEND_ORIGIN);
+    const actual = await transposit.makeCallJson<{}>("GET", "/endpoint");
+
+    expect(actual).toEqual(expected);
+  });
+
+  it("invalid json throws error", async () => {
+    expect.assertions(1);
+
+    const response = new Response("totaljunk", { status: 200 });
+    (window.fetch as jest.Mock).mockReturnValueOnce(Promise.resolve(response));
+
+    const transposit = new Transposit(BACKEND_ORIGIN);
+    return expect(
+      transposit.makeCallJson<{}>("GET", "/endpoint"),
+    ).rejects.toThrow(new APIError("Failed to read response body", response));
+  });
+
+  describe("stash", () => {
+    it("stash get sends correct request", async () => {
+      expect.assertions(2);
+      const expected = "someString";
+      const response = new Response('"someString"');
+
+      (window.fetch as jest.Mock).mockReturnValueOnce(
+        Promise.resolve(response),
+      );
+      const transposit = new Transposit(BACKEND_ORIGIN);
+
+      const actual = await transposit.stash.get("key");
+
+      expect(actual).toBe(expected);
+      expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
+        "https://arbys-beef-xyz12.transposit.io/api/v1/stash/value?keyName=key",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    });
+
+    it("stash listKeys sends correct request", async () => {
+      expect.assertions(2);
+      const expected = ["a", "b", "c"];
+      const response = new Response(`["a", "b", "c"]`);
+
+      (window.fetch as jest.Mock).mockReturnValueOnce(
+        Promise.resolve(response),
+      );
+      const transposit = new Transposit(BACKEND_ORIGIN);
+
+      const actual = await transposit.stash.listKeys();
+
+      expect(actual).toEqual(expected);
+      expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
+        "https://arbys-beef-xyz12.transposit.io/api/v1/stash/keys",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    });
+
+    it("stash put sends correct request", async () => {
+      expect.assertions(1);
+      const response = new Response("");
+
+      (window.fetch as jest.Mock).mockReturnValueOnce(
+        Promise.resolve(response),
+      );
+      const transposit = new Transposit(BACKEND_ORIGIN);
+
+      await transposit.stash.put("key", "value");
+      expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
+        "https://arbys-beef-xyz12.transposit.io/api/v1/stash/value?keyName=key",
+        {
+          method: "POST",
+          body: `"value"`,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    });
   });
 });

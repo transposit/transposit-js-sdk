@@ -27,38 +27,29 @@ describe("tr-fetch", () => {
   it("deserializes good json in 2XX response", async () => {
     expect.assertions(1);
 
-    const expected: {} = { everything: "is", a: "okay!" };
+    const body: {} = { everything: "is", a: "okay!" };
+    const expected = new Response(JSON.stringify(body), {
+      status: 200,
+    });
 
-    (window.fetch as jest.Mock).mockReturnValueOnce(
-      Promise.resolve(
-        new Response(JSON.stringify(expected), {
-          status: 200,
-        }),
-      ),
-    );
+    (window.fetch as jest.Mock).mockReturnValueOnce(Promise.resolve(expected));
 
-    const actual = await trfetch<{}>(unusedRequestInfo);
+    const actual = await trfetch(unusedRequestInfo);
 
     expect(actual).toEqual(expected);
   });
 
-  it("throws on bad json in 2XX response", async () => {
-    expect.assertions(2);
+  it("returns with bad json in 2XX response", async () => {
+    expect.assertions(1);
 
-    (window.fetch as jest.Mock).mockReturnValueOnce(
-      Promise.resolve(
-        new Response("totaljunk", {
-          status: 200,
-        }),
-      ),
-    );
+    const expected = new Response("totaljunk", {
+      status: 200,
+    });
 
-    try {
-      await trfetch<{}>(unusedRequestInfo);
-    } catch (e) {
-      expect(e).toBeInstanceOf(APIError);
-      expect(e.message).toBe(INTERNAL_ERROR_MESSAGE);
-    }
+    (window.fetch as jest.Mock).mockReturnValueOnce(Promise.resolve(expected));
+
+    const actual = await trfetch(unusedRequestInfo);
+    expect(actual).toEqual(expected);
   });
 
   it("throws on user-visible error in 4XX response", async () => {
@@ -76,7 +67,7 @@ describe("tr-fetch", () => {
     );
 
     try {
-      await trfetch<{}>(unusedRequestInfo);
+      await trfetch(unusedRequestInfo);
     } catch (e) {
       expect(e).toBeInstanceOf(APIError);
       expect(e.message).toBe("dance your face off");
@@ -95,7 +86,7 @@ describe("tr-fetch", () => {
     );
 
     try {
-      await trfetch<{}>(unusedRequestInfo);
+      await trfetch(unusedRequestInfo);
     } catch (e) {
       expect(e).toBeInstanceOf(APIError);
       expect(e.message).toBe(INTERNAL_ERROR_MESSAGE);
@@ -114,7 +105,7 @@ describe("tr-fetch", () => {
     );
 
     try {
-      await trfetch<{}>(unusedRequestInfo);
+      await trfetch(unusedRequestInfo);
     } catch (e) {
       expect(e).toBeInstanceOf(APIError);
       expect(e.message).toBe(INTERNAL_ERROR_MESSAGE);
@@ -129,7 +120,7 @@ describe("tr-fetch", () => {
     );
 
     try {
-      await trfetch<{}>(unusedRequestInfo);
+      await trfetch(unusedRequestInfo);
     } catch (e) {
       expect(e).toBeInstanceOf(TypeError);
       expect(e.message).toBe("Network error");
