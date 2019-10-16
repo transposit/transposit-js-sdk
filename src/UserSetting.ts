@@ -22,9 +22,9 @@ export class UserSetting {
     this.transposit = transposit;
   }
 
-  async get(key: string): Promise<any> {
+  async get<T>(key: string): Promise<T> {
     const queryParams = { keyName: key };
-    return await this.transposit.makeCallJson<any>(
+    return await this.transposit.makeCallJson<T>(
       "GET",
       "/api/v1/user_setting/value",
       { queryParams },

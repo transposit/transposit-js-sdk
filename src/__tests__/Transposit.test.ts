@@ -493,7 +493,7 @@ describe("Transposit", () => {
         Promise.resolve(response),
       );
       const transposit = new Transposit(BACKEND_ORIGIN);
-      const actual = await transposit.userSetting.get("key");
+      const actual = await transposit.userSetting.get<string>("key");
 
       expect(actual).toBe(expected);
       expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
