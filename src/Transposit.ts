@@ -142,11 +142,11 @@ export class Transposit {
   get env() {
     return new Environment(this);
   }
-  
+
   get userSetting() {
     return new UserSetting(this);
+  }
 
-    
   async loadUser(): Promise<User> {
     this.assertIsSignedIn();
 
