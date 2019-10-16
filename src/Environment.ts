@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, 2019 Transposit Corporation. All Rights Reserved.
+ * Copyright 2019 Transposit Corporation. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,18 @@
  * limitations under the License.
  */
 
-export * from "./EndRequestLog";
-export * from "./Environment";
-export * from "./Transposit";
-export * from "./Stash";
-export * from "./UserSetting";
-export { User } from "./signin/user";
+import { Transposit } from ".";
+
+export class Environment {
+  private transposit: Transposit;
+  constructor(transposit: Transposit) {
+    this.transposit = transposit;
+  }
+
+  async get<T>(key: string): Promise<T> {
+    const queryParams = { keyName: key };
+    return await this.transposit.makeCallJson<T>("GET", "/api/v1/env/value", {
+      queryParams,
+    });
+  }
+}

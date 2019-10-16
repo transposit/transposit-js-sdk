@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { EndRequestLog, Stash, UserSetting } from ".";
+import { EndRequestLog, Environment, Stash, UserSetting } from ".";
 import { APIError } from "./errors/APIError";
 import { SDKError } from "./errors/SDKError";
 import { popCodeVerifier, pushCodeVerifier } from "./signin/pkce-helper";
@@ -139,10 +139,14 @@ export class Transposit {
     return new Stash(this);
   }
 
+  get env() {
+    return new Environment(this);
+  }
+  
   get userSetting() {
     return new UserSetting(this);
-  }
 
+    
   async loadUser(): Promise<User> {
     this.assertIsSignedIn();
 
