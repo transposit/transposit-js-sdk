@@ -371,8 +371,8 @@ describe("Transposit", () => {
       }
     });
 
-    let bad_statuses = ["ERROR", "CANCELLED", "TIMEOUT"];
-    bad_statuses.forEach(function (status) {
+    const badStatuses = ["ERROR", "CANCELLED", "TIMEOUT"];
+    badStatuses.forEach(status => {
       it(`run with ${status} throws OperationError`, async () => {
         expect.assertions(4);
 
@@ -381,7 +381,7 @@ describe("Transposit", () => {
 
         const response: Response = new Response(
           JSON.stringify({
-            status: status,
+            status,
             requestId: "12345",
             result: {
               exceptionLog: {
