@@ -482,4 +482,51 @@ describe("Transposit", () => {
       );
     });
   });
+
+  describe("userSetting", () => {
+    it("userSetting get sends correct request", async () => {
+      expect.assertions(2);
+      const expected = "someString";
+      const response = new Response('"someString"');
+
+      (window.fetch as jest.Mock).mockReturnValueOnce(
+        Promise.resolve(response),
+      );
+      const transposit = new Transposit(BACKEND_ORIGIN);
+      const actual = await transposit.userSetting.get<string>("key");
+
+      expect(actual).toBe(expected);
+      expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
+        "https://arbys-beef-xyz12.transposit.io/api/v1/user_setting/value?keyName=key",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    });
+
+    it("userSetting put sends correct request", async () => {
+      expect.assertions(1);
+      const response = new Response("");
+
+      (window.fetch as jest.Mock).mockReturnValueOnce(
+        Promise.resolve(response),
+      );
+      const transposit = new Transposit(BACKEND_ORIGIN);
+
+      await transposit.userSetting.put("key", "value");
+      expect(window.fetch as jest.Mock).toHaveBeenCalledWith(
+        "https://arbys-beef-xyz12.transposit.io/api/v1/user_setting/value?keyName=key",
+        {
+          method: "POST",
+          body: `"value"`,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    });
+  });
 });

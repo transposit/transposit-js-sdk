@@ -18,4 +18,5 @@ export * from "./EndRequestLog";
 export * from "./Environment";
 export * from "./Transposit";
 export * from "./Stash";
+export * from "./UserSetting";
 export { User } from "./signin/user";
