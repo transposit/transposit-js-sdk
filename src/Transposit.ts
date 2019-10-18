@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { Environment, OperationError, OperationResponse, Stash } from ".";
+
+import { Environment, OperationError, OperationResponse, Stash, UserSetting } from ".";
 import { EndRequestLog } from "./EndRequestLog";
 import { APIError } from "./errors/APIError";
 import { SDKError } from "./errors/SDKError";
@@ -142,6 +143,10 @@ export class Transposit {
 
   get env() {
     return new Environment(this);
+  }
+
+  get userSetting() {
+    return new UserSetting(this);
   }
 
   async loadUser(): Promise<User> {
