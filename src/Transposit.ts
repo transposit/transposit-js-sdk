@@ -14,7 +14,14 @@
  * limitations under the License.
  */
 
-import { EndRequestLog, Environment, Stash, UserSetting } from ".";
+import {
+  Environment,
+  OperationError,
+  OperationResponse,
+  Stash,
+  UserSetting,
+} from ".";
+import { EndRequestLog } from "./EndRequestLog";
 import { APIError } from "./errors/APIError";
 import { SDKError } from "./errors/SDKError";
 import { popCodeVerifier, pushCodeVerifier } from "./signin/pkce-helper";
@@ -153,15 +160,20 @@ export class Transposit {
     return await this.makeCallJson<User>("GET", "/api/v1/user");
   }
 
-  async run(
+  async run<T>(
     operationId: string,
     parameters: OperationParameters = {},
-  ): Promise<EndRequestLog> {
-    return this.makeCallJson<EndRequestLog>(
+  ): Promise<OperationResponse<T>> {
+    const response = await this.makeCall(
       "POST",
       `/api/v1/execute/${operationId}`,
       { body: { parameters } },
     );
+    const log = await extractJson<EndRequestLog>(response);
+    if (log.status !== "SUCCESS") {
+      throw new OperationError(log, response);
+    }
+    return new EndRequestLogResponse<T>(log, response);
   }
 
   async makeCallJson<T>(
@@ -170,12 +182,7 @@ export class Transposit {
     httpParams: HttpParams = {},
   ): Promise<T> {
     const response = await this.makeCall(method, path, httpParams);
-    return response.json().then(
-      x => x,
-      () => {
-        throw new APIError("Failed to read response body", response);
-      },
-    );
+    return extractJson<T>(response);
   }
 
   async makeCall(
@@ -218,6 +225,15 @@ export class Transposit {
   }
 }
 
+function extractJson<T>(response: Response): Promise<T> {
+  return response.json().then(
+    x => x,
+    () => {
+      throw new APIError("Failed to read response body", response);
+    },
+  );
+}
+
 interface HttpParams {
   body?: any;
   headers?: { [s: string]: string };
@@ -230,4 +246,27 @@ export interface SignInSuccess {
 
 export interface OperationParameters {
   [paramName: string]: string;
+}
+
+class EndRequestLogResponse<T> implements OperationResponse<T> {
+  results: T[];
+  requestId: string;
+  constructor(log: EndRequestLog, response: Response) {
+    this.requestId = log.requestId;
+    const logResults = log.result.results;
+    if (!logResults) {
+      throw new APIError(
+        "API returned an unexpected response schema",
+        response,
+      );
+    }
+    this.results = logResults;
+  }
+
+  get value(): T {
+    if (this.results.length === 0) {
+      throw new Error("Operation did not return a value");
+    }
+    return this.results[0];
+  }
 }
