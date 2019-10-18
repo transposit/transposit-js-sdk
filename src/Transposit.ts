@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
-
-import { Environment, OperationError, OperationResponse, Stash, UserSetting } from ".";
+import {
+  Environment,
+  OperationError,
+  OperationResponse,
+  Stash,
+  UserSetting,
+} from ".";
 import { EndRequestLog } from "./EndRequestLog";
 import { APIError } from "./errors/APIError";
 import { SDKError } from "./errors/SDKError";
