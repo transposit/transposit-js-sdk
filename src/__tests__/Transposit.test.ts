@@ -371,7 +371,12 @@ describe("Transposit", () => {
       }
     });
 
-    const badStatuses = ["ERROR", "CANCELLED", "TIMEOUT"];
+    const badStatuses = [
+      "ERROR",
+      "CANCELLED",
+      "TIMEOUT",
+      "RESOURCELIMITEXCEEDED",
+    ];
     badStatuses.forEach(status => {
       it(`run with ${status} throws OperationError`, async () => {
         expect.assertions(4);
