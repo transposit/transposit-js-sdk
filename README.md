@@ -19,7 +19,7 @@ $ npm install transposit
 ```
 
 ```html
-<script src="https://unpkg.com/transposit@1.0.0/dist/bundle.prod.js"></script>
+<script src="https://unpkg.com/transposit@2.0.0/dist/bundle.prod.js"></script>
 ```
 
 Instantiate the SDK with the hosted app origin that uniquely identifies your application:
@@ -42,15 +42,12 @@ Call your backend through an idiomatic library.
 
 ```javascript
 transposit
-  .runOperation("myOperation")
-  .then(response => {
-    if (response.status !== "SUCCESS") {
-      throw response;
-    }
-    const results = response.result.results;
+  .run("myOperation")
+  .then(({results})) => {
+    // do it!
   })
-  .catch(response => {
-    console.log(response);
+  .catch(error => {
+    console.log(error);
   });
 ```
 
@@ -69,10 +66,7 @@ Create a page that displays a sign-in button. Use the SDK to begin sign-in when 
 <button type="button" onclick="signin()">Sign in</button>
 <script>
   function signin() {
-    window.location.href = transposit.startLoginUri(
-        // Specify where to redirect after sign-in is successful
-        `${window.location.origin}/handle-signin`
-    );
+    transposit.signIn(`${window.location.origin}/handle-signin`);
   }
 </script>
 ```
@@ -86,12 +80,10 @@ Create a page that handles redirection at the end of sign-in. Use the SDK to com
 ```html
 <script>
   try {
-    transposit.handleLogin(() => {
-      // Specify where to redirect after sign-in completes
-      window.location.href = "/";
-    });
-  } catch (err) {
-    console.log(err);
+    await transposit.handleSignIn();
+    window.location.href = "/";
+  } catch (error) {
+    console.log(error);
     window.location.href = "/signin";
   }
 </script>
@@ -103,7 +95,7 @@ For all routes that require sign-in, check if the user is signed in. Redirect to
 
 ```html
 <script>
-  if (!transposit.isLoggedIn()) {
+  if (!transposit.isSignedIn()) {
     window.location.href = "/signin";
   }
 </script>
@@ -117,7 +109,7 @@ Render a sign-out button. Use the SDK to sign out when the buttons is clicked.
 <button type="button" onclick="signout()">Sign out</button>
 <script>
   function signout() {
-    transposit.logOut(`${window.location.origin}/signin`);
+    transposit.signOut(`${window.location.origin}/signin`);
   }
 </script>
 ```
