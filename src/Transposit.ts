@@ -62,6 +62,54 @@ export class Transposit {
     }
   }
 
+  private async makeCall(
+    method: string,
+    path: string,
+    { queryParams, body, headers }: HttpParams = {},
+  ): Promise<Response> {
+    if (!headers) {
+      headers = {
+        "Content-Type": "application/json",
+      };
+      if (this.accessToken) {
+        headers.Authorization = `Bearer ${this.accessToken}`;
+      }
+    }
+
+    const url = new URL(path, this.hostedAppOrigin);
+    if (queryParams != null) {
+      Object.keys(queryParams).forEach(key =>
+        url.searchParams.append(key, queryParams[key]),
+      );
+    }
+
+    let bodyEncoder;
+    if (headers["Content-Type"] === "application/x-www-form-urlencoded") {
+      bodyEncoder = formUrlEncode;
+    } else {
+      bodyEncoder = JSON.stringify;
+    }
+
+    const response = await trfetch(
+      url.href,
+      Object.assign(
+        { method, headers },
+        body === null ? null : { body: bodyEncoder(body) }, // Only include body if non-null
+      ),
+    );
+
+    return response;
+  }
+
+  private async makeCallJson<T>(
+    method: string,
+    path: string,
+    httpParams: HttpParams = {},
+  ): Promise<T> {
+    const response = await this.makeCall(method, path, httpParams);
+    return extractJson<T>(response);
+  }
+
   isSignedIn(): boolean {
     return this.accessToken !== null;
   }
@@ -174,54 +222,6 @@ export class Transposit {
       throw new OperationError(log, response);
     }
     return new EndRequestLogResponse<T>(log, response);
-  }
-
-  async makeCallJson<T>(
-    method: string,
-    path: string,
-    httpParams: HttpParams = {},
-  ): Promise<T> {
-    const response = await this.makeCall(method, path, httpParams);
-    return extractJson<T>(response);
-  }
-
-  async makeCall(
-    method: string,
-    path: string,
-    { queryParams, body, headers }: HttpParams = {},
-  ): Promise<Response> {
-    if (!headers) {
-      headers = {
-        "Content-Type": "application/json",
-      };
-      if (this.accessToken) {
-        headers.Authorization = `Bearer ${this.accessToken}`;
-      }
-    }
-
-    const url = new URL(path, this.hostedAppOrigin);
-    if (queryParams != null) {
-      Object.keys(queryParams).forEach(key =>
-        url.searchParams.append(key, queryParams[key]),
-      );
-    }
-
-    let bodyEncoder;
-    if (headers["Content-Type"] === "application/x-www-form-urlencoded") {
-      bodyEncoder = formUrlEncode;
-    } else {
-      bodyEncoder = JSON.stringify;
-    }
-
-    const response = await trfetch(
-      url.href,
-      Object.assign(
-        { method, headers },
-        body === null ? null : { body: bodyEncoder(body) }, // Only include body if non-null
-      ),
-    );
-
-    return response;
   }
 }
 

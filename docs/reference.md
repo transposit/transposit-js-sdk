@@ -1,5 +1,27 @@
-# Reference
+<img src="https://www.transposit.com/img/transposit-logo-black.png" width="182px" alt="Transposit"/>
 
-The Transposit JavaScript SDK makes it simple to deal with sign-in, authentication, and running operations in your application.
+# Reference Documentation
 
-More coming soon!
+The reference documentation outlines each method of the SDK in detail. If you're new to the SDK, see the [README](../README.md) instead.
+
+## Call endpoints
+
+* [Run an operation](methods/run.md)
+
+## Require sign-in
+
+* [Sign in](methods/sign-in.md)
+* [Handle sign-in](methods/handle-sign-in.md)
+* [Sign out](methods/sign-out.md)
+* [Check is signed-in](methods/is-signed-in.md)
+* [Load user](methods/load-user.md)
+
+## Manage authentication
+
+* [Link to settings](methods/settings-uri.md)
+
+## Access raw data APIs
+
+* [Stash](data/stash.md)
+* [Environment variables](data/env.md)
+* [User settings](data/user-settings.md)
