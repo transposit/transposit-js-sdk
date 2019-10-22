@@ -19,9 +19,3 @@ The reference documentation outlines each method of the SDK in detail. If you're
 ## Manage authentication
 
 * [Link to settings](methods/settings-uri.md)
-
-## Access raw data APIs
-
-* [Stash](data/stash.md)
-* [Environment variables](data/env.md)
-* [User settings](data/user-settings.md)
