@@ -17,7 +17,7 @@ Sign out of your web app. You should [configure sign-in](https://www.transposit.
 signOut(redirectUri: string): void
 ```
 
-`signOut` takes in a _redirectUri_ to dictate where the browser should redirect after sign-out succeeds.
+`signOut` takes in a `redirectUri` to dictate where the browser should redirect after sign-out succeeds.
 
 On success, it redirects the browser to complete sign-out.
 

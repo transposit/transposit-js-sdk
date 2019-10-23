@@ -30,6 +30,6 @@ interface SignInSuccess {
 
 `handleSignIn` reads query parameters set by Transposit to complete sign-in.
 
-On success, it returns a _needsKeys_ boolean. This value is `true` if the signed-in user is missing keys for some data connections. This value is `false` if the signed-in user has keys for all data connections. See [managed authentication](https://www.transposit.com/docs/building/managed-authentication/) for more information.
+On success, it returns a `needsKeys` boolean. This value is `true` if the signed-in user is missing keys for some data connections. This value is `false` if the signed-in user has keys for all data connections. See [managed authentication](https://www.transposit.com/docs/building/managed-authentication/) for more information.
 
 On failure, it throws an error with more information about the failure.

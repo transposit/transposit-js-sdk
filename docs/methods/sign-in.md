@@ -20,8 +20,8 @@ async signIn(
   ): Promise<void>
 ```
 
-`signIn` takes in a _redirectUri_ to dictate where [`handleSignIn`](handle-sign-in.md) will be called. It also takes in an optional sign-in provider. Omit this parameter to use the sign-in provider already configured for your app.
+`signIn` takes in a `redirectUri` to dictate where [`handleSignIn`](handle-sign-in.md) will be called. It also takes in an optional sign-in provider. Omit this parameter to use the sign-in provider already configured for your app.
 
-On success, it redirects the browser to Transposit for sign-in. Eventually, it will redirect back to _redirectUri_.
+On success, it redirects the browser to Transposit for sign-in. Eventually, it will redirect back to `redirectUri`.
 
 On failure, it throws an error with more information about the failure.

@@ -17,12 +17,12 @@ transposit
 
 ```typescript
 async run<T>(
-    operationId: string,
+    operation: string,
     parameters: OperationParameters = {},
   ): Promise<OperationResponse<T>>
 
 interface OperationParameters {
-  [paramName: string]: string;
+  [parameterName: string]: string;
 }
 
 interface OperationResponse<T> {
@@ -32,8 +32,8 @@ interface OperationResponse<T> {
 }
 ```
 
-`run` takes in an _operationId_ and map of _parameters_.
+`run` takes in an `operation` and map of `parameters`.
 
-On success, it returns a _results_ array. If the _results_ array contains only a single item, this item can be accessed as _value_ for your convenience.
+On success, it returns a `results` array. If the `results` array contains only a single item, this item can be accessed as `value` for your convenience.
 
 On failure, it throws an error with more information about the failure.
