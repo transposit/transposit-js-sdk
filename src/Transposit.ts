@@ -161,12 +161,12 @@ export class Transposit {
   }
 
   async run<T>(
-    operationId: string,
+    operation: string,
     parameters: OperationParameters = {},
   ): Promise<OperationResponse<T>> {
     const response = await this.makeCall(
       "POST",
-      `/api/v1/execute/${operationId}`,
+      `/api/v1/execute/${operation}`,
       { body: { parameters } },
     );
     const log = await extractJson<EndRequestLog>(response);
@@ -245,7 +245,7 @@ export interface SignInSuccess {
 }
 
 export interface OperationParameters {
-  [paramName: string]: string;
+  [parameterName: string]: string;
 }
 
 class EndRequestLogResponse<T> implements OperationResponse<T> {
