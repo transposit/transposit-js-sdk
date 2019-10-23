@@ -20,7 +20,7 @@ Build the sign-in callback page for your web app. You should [configure sign-in]
 
 ## Signature
 
-```javascript
+```typescript
 async handleSignIn(): Promise<SignInSuccess>
 
 interface SignInSuccess {
