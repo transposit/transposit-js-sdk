@@ -1,4 +1,4 @@
-# Stash
+# Stash data
 
 > You must expose app data endpoints before calling these methods.
 

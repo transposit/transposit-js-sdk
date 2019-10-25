@@ -1,4 +1,4 @@
-# Stash
+# Read environment variables
 
 > You must expose app data endpoints before calling this get method.
 

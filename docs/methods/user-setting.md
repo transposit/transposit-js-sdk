@@ -1,4 +1,4 @@
-# Stash
+# Manage user settings
 
 > You must expose app data endpoints before calling these methods.
 
