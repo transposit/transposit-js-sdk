@@ -1,5 +1,7 @@
 # Run
 
+> You must deploy an operation as an endpoint before calling this method.
+
 Run an operation exposed as an [endpoint](https://www.transposit.com/docs/building/endpoints/). This method only works for endpoints that are publically available or protected by user sign-in. This method cannot be used to call endpoints protected by an API key.
 
 ```javascript
