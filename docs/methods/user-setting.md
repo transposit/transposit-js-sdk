@@ -9,7 +9,7 @@ User settings rely on a pre-configured schema. Use [stash](./stash.md) if you wa
 ```javascript
 await transposit.userSetting.put("key-in-schema", "some-value");
 await transposit.userSetting.get("key-in-schema"); // "some-value"
-await transposit.userSetting.put("key-in-schema", null); // <--- reset to default value
+await transposit.userSetting.put("key-in-schema", null); // <--- delete a value
 
 await transposit.userSetting.put("key-in-schema", 1); // <--- error! value is wrong type
 await transposit.userSetting.get("not-in-schema"); // <--- error! key does not exist
@@ -22,4 +22,4 @@ async put(key: string, value: any): Promise<void>
 async get<T>(key: string): Promise<T>
 ```
 
-`put` only supports a `value` that is JSON-serializable.
+`put` only supports a `value` that is JSON-serializable. `put` will throw an error if the `key` does not exist in the schema or the `value` is not of the expected type.
