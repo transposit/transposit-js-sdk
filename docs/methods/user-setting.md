@@ -9,7 +9,10 @@ User settings rely on a pre-configured schema. Use [stash](./stash.md) if you wa
 ```javascript
 await transposit.userSetting.put("key-in-schema", "some-value");
 await transposit.userSetting.get("key-in-schema"); // "some-value"
-await transposit.userSetting.get("not-in-schema"); // <--- error!
+await transposit.userSetting.put("key-in-schema", null); // <--- reset to default value
+
+await transposit.userSetting.put("key-in-schema", 1); // <--- error! value is wrong type
+await transposit.userSetting.get("not-in-schema"); // <--- error! key does not exist
 ```
 
 ## Signature

@@ -13,7 +13,7 @@ await transposit.stash.listKeys(); // ["one", "two", "three"]
 
 await transposit.get("three"); // 3
 
-await transposit.stash.put("three", null); // <---- deletes from the stash
+await transposit.stash.put("three", null); // <--- deletes from the stash
 await transposit.stash.listKeys(); // ["one", "two"]
 await transposit.get("three"); // null
 ```
