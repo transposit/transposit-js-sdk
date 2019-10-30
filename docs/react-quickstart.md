@@ -169,4 +169,64 @@ function HandleSignIn({ history }) {
 
 ### _/_
 
+Require users sign in before accessing your index page. Use custom React hooks to implement this behavior using the SDK.
 
+```javascript
+// Hook to check that user is signed-in. Return true if they are.
+function useSignedIn(history) {
+  const [isSignedIn, setIsSignedIn] = React.useState(false);
+  React.useEffect(() => {
+    if (!transposit.isSignedIn()) {
+      history.push("/signin");
+    } else {
+      setIsSignedIn(true);
+    }
+  }, []);
+  return isSignedIn;
+}
+
+// Hook to load the signed-in user
+function useUser(isSignedIn) {
+  const [user, setUser] = React.useState(null);
+  React.useEffect(() => {
+    if (isSignedIn) {
+      transposit.loadUser().then(u => setUser(u));
+    }
+  }, [isSignedIn]);
+  return user;
+}
+
+function Index({ history }) {
+  // Check if signed-in
+  const isSignedIn = useSignedIn(history);
+  const user = useUser(isSignedIn);
+
+  // If not signed-in, wait while rendering nothing
+  if (!user) {
+    return null;
+  }
+
+  // If signed-in, display the app
+  return (
+    <>
+      <h1>Hello, {user.name}</h1>
+      <button
+        onClick={() => {
+          transposit.signOut(`${window.location.origin}/signin`);
+        }}
+      >
+        Sign Out
+      </button>
+    </>
+  );
+}
+```
+
+## Call your backend
+
+
+
+
+# Set up Netlify
+
+TODO
