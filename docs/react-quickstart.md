@@ -169,7 +169,7 @@ function HandleSignIn({ history }) {
 
 ### _/_
 
-Require users sign in before accessing your index page. Use custom React hooks to implement this behavior using the SDK.
+Require users to sign in before accessing your index page. Create custom React hooks to implement this behavior using the SDK.
 
 ```javascript
 // Hook to check that user is signed-in. Return true if they are.
@@ -224,9 +224,105 @@ function Index({ history }) {
 
 ## Call your backend
 
+Call your backend when your index page loads.
 
+``` javascript
+function Index({ history }) {
+  // Check if signed-in
+  const isSignedIn = useSignedIn(history);
+  const user = useUser(isSignedIn);
 
+  // Call your backend
+  const [data, setData] = React.useState(null);
+  React.useEffect(() => {
+    if (isSignedIn) {
+      transposit
+        .run("hello") // the name of your deployed operation
+        .then(({ results }) => {
+          setData(results);
+        });
+    }
+  }, [isSignedIn]);
+
+  // If not signed-in, wait while rendering nothing
+  if (!user) {
+    return null;
+  }
+
+  // If signed-in, display the app
+  return (
+    <>
+      <h1>Hello, {user.name}</h1>
+      {data ? (
+        <p>
+          <code>{JSON.stringify(data, undefined, 2)}</code>
+        </p>
+      ) : (
+        <p>loading...</p>
+      )}
+      <button
+        onClick={() => {
+          transposit.signOut(`${window.location.origin}/signin`);
+        }}
+      >
+        Sign Out
+      </button>
+    </>
+  );
+}
+```
 
 # Set up Netlify
 
-TODO
+Now that your app is working locally, [deploy it to Netlify](https://www.netlify.com/blog/2016/07/22/deploy-react-apps-in-less-than-30-seconds/).
+
+Tell Netlify to treat your app as a [single page app](https://docs.netlify.com/routing/redirects/rewrites-proxies/#history-pushstate-and-single-page-apps). Create a file _public/\_redirects_ with content:
+```
+/*    /index.html   200
+```
+
+Install the `netlify-cli`.
+```bash
+npm install netlify-cli -g
+```
+
+Build your frontend and deploy it.
+```bash
+npm run build
+netlify deploy
+# Select "Create & configure a new site"
+# Give your site a unique name
+# Your "Publish directory" should be ./build
+```
+
+To sign in to your app, you need to update the **Successful sign-in URIs** in Transposit. Navigate to **Users > User Configuration > Registration and Login** and click **Advanced**. Add `<live draft URL>/handle-signin` to **Successful sign-in URIs**. Save your changes.
+
+Try out your app on Netlify!
+
+Use Netlify's `--prod` option to deploy to production. Make sure to add your production URL to **Successful sign-in URIs** as well.
+
+```bash
+npm run build
+netlify deploy --prod
+# Your "Publish directory" should be ./build
+```
+
+# Continued development
+
+When making changes to the backend, use Transposit as an IDE. Commit in the IDE to deploy your changes.
+
+When making changes to the frontend, use your preferred editor. Commit locally and use `netlify` to deploy frontend changes.
+
+To synchronize your backend and frontend changes, pull your backend changes locally from Transposit. Merge them with your frontend changes. You can back up your repo by either pushing to Transposit or hosting a copy of the repo on GitHub.
+
+```bash
+# Pull backend change from Transposit. Merge them with frontend changes.
+git pull
+
+# Push merged repo back to Transposit as a backup
+git push
+
+# Optionally, add a GitHub remote repo as a backup
+git remote add github https://github.com/jplace/hello_react.git
+git push -u github master
+```
