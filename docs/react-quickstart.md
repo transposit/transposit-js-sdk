@@ -326,3 +326,7 @@ git push
 git remote add github https://github.com/jplace/hello_react.git
 git push -u github master
 ```
+
+# Next steps
+
+Check out the [reference documentation](./reference.md) to learn more about the SDK. Check out [Transposit's documentation](https://www.transposit.com/docs/) to learn more about building your backend.
