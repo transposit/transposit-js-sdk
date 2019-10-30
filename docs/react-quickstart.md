@@ -72,7 +72,10 @@ Install [React Router](https://reacttraining.com/react-router/web/guides/quick-s
 npm install --save react-router-dom
 ```
 
-Rewrite your React app to have three routes: _/signin_, _/signin/handle-redirect/_, _/_.
+Rewrite your React app to have three routes:
+- _/signin_ for your sign-in page
+- _/signin/handle-redirect/_ for your sign-in redirect
+- _/_ for your app's signed-in content
 
 ```javascript
 // todo
