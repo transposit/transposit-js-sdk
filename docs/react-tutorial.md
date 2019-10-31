@@ -1,10 +1,10 @@
 <img src="https://www.transposit.com/img/transposit-logo-black.png" width="182px" alt="Transposit"/>
 
-# React Quickstart
+# React Tutorial
 
 Build a web app using [React](https://reactjs.org/) and [Netlify](https://www.netlify.com/) as the frontend, and [Transposit](https://www.transposit.com/) as the backend.
 
-> If you're new to Transposit, browse [its quickstart](https://www.transposit.com/docs/get-started/quickstart/). This React quickstart will assume basic familiarity with the product.
+> If you're new to Transposit, browse [its quickstart](https://www.transposit.com/docs/get-started/quickstart/). This React tutorial will assume basic familiarity with Transposit.
 
 # Set up Transposit
 
