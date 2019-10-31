@@ -35,6 +35,10 @@ Transposit apps are backed by a Git repo. Clone your app's repo locally so you c
 
 Navigate to **Settings > App Info > Source code** and [perform a `git clone`](https://www.transposit.com/docs/references/repository/#cloning-your-repository).
 
+```bash
+git clone https://console.transposit.com/git/jplace/hello_react
+```
+
 # Set up React
 
 [Install `create-react-app` locally](https://create-react-app.dev/).
@@ -42,6 +46,8 @@ Navigate to **Settings > App Info > Source code** and [perform a `git clone`](ht
 ```bash
 npm install -g create-react-app
 ```
+
+> If you're unfamiliar with React or `create-react-app`, checkout their [quickstart](https://create-react-app.dev/docs/getting-started/).
 
 ## Initialize your React app
 
@@ -57,10 +63,8 @@ npx create-react-app . # --typescript if you prefer typescript
 Test that your React app is now working.
 
 ```bash
-npm start # app will be available at http://localhost:3000
+npm start # your app will be available at http://localhost:3000
 ```
-
-> If you're unfamiliar with React or `create-react-app`, checkout their [quickstart](https://create-react-app.dev/docs/getting-started/).
 
 ## Configure a router
 
@@ -72,10 +76,10 @@ Install [React Router](https://reacttraining.com/react-router/web/guides/quick-s
 npm install --save react-router-dom
 ```
 
-Rewrite your React app to have three routes:
+Rewrite your React app (_frontend/src/App.js_) to have three routes:
 - _/signin_ for your sign-in page
 - _/handle-signin_ for your sign-in redirect
-- _/_ for your app's signed-in content
+- _/_ (index) for your app's signed-in content
 
 ```javascript
 import React from "react";
@@ -120,11 +124,13 @@ Install [Transposit's JS SDK](https://www.npmjs.com/package/transposit).
 npm install --save transposit
 ```
 
-Instantiate the SDK with a reference your app's URL. You can find your URL in Transposit at **Users > User Configuration**.
+Instantiate the SDK with a reference to your app's URL. In Transposit, You can find your URL under **Users > User Configuration**.
 
 ```javascript
+import { Transposit } from "transposit";
+
 const transposit = new Transposit(
-  "https://hello-react-ngsln.transposit.io" // replate with your app's URL
+  "https://hello-react-ngsln.transposit.io" // replace with your app's URL
 );
 ```
 
@@ -148,7 +154,7 @@ function SignIn() {
 }
 ```
 
-### _/handle-signin
+### _/handle-signin_
 
 At the end of sign-in, Transposit will redirect back to your app. Your app needs to use the SDK to complete the sign-in process and initiate a session.
 
@@ -167,9 +173,9 @@ function HandleSignIn({ history }) {
 }
 ```
 
-### _/_
+### _/_ (index)
 
-Require users to sign in before accessing your index page. Create custom React hooks to implement this behavior using the SDK.
+Require users to sign in before accessing your index page. Use the SDK to create React hooks that implement this behavior.
 
 ```javascript
 // Hook to check that user is signed-in. Return true if they are.
@@ -224,7 +230,7 @@ function Index({ history }) {
 
 ## Call your backend
 
-Call your backend when your index page loads.
+Load dynamic data into your web app. Call your backend when your index page loads.
 
 ``` javascript
 function Index({ history }) {
@@ -271,6 +277,8 @@ function Index({ history }) {
   );
 }
 ```
+
+Your web app now offers sign-in and calls your backend. The code in its entirety can be viewed [here](./react-tutorial-code.js).
 
 # Set up Netlify
 
