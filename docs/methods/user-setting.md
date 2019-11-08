@@ -18,8 +18,8 @@ await transposit.userSetting.get("not-in-schema"); // <--- error! key does not e
 ## Signature
 
 ```typescript
-async put(key: string, value: any): Promise<void>
-async get<T>(key: string): Promise<T>
+async put(key: string, value: AnyJson): Promise<void>
+async get<T extends AnyJson>(key: string): Promise<T>
 ```
 
 `put` only supports a `value` that is JSON-serializable. `put` will throw an error if the `key` does not exist in the schema or the `value` is not of the expected type.
