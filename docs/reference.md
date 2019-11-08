@@ -22,6 +22,4 @@ The reference documentation outlines each method of the SDK in detail. If you're
 
 ## App data endpoints
 
-* [Stash data](methods/stash.md)
-* [Read environment variables](methods/environment.md)
 * [Manage user settings](methods/user-setting.md)

@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-export * from "./Environment";
 export * from "./Operation";
 export * from "./Transposit";
-export * from "./Stash";
 export * from "./UserSetting";
 export { User } from "./signin/user";
