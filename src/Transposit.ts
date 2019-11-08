@@ -14,13 +14,7 @@
  * limitations under the License.
  */
 
-import {
-  Environment,
-  OperationError,
-  OperationResponse,
-  Stash,
-  UserSetting,
-} from ".";
+import { OperationError, OperationResponse, UserSetting } from ".";
 import { EndRequestLog } from "./EndRequestLog";
 import { APIError } from "./errors/APIError";
 import { SDKError } from "./errors/SDKError";
@@ -140,14 +134,6 @@ export class Transposit {
         redirectUri || window.location.href,
       )}`,
     );
-  }
-
-  get stash() {
-    return new Stash(this);
-  }
-
-  get env() {
-    return new Environment(this);
   }
 
   get userSetting() {
