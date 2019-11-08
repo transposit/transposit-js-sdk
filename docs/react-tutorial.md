@@ -4,6 +4,8 @@
 
 Build a web app using [React](https://reactjs.org/) and [Netlify](https://www.netlify.com/) as the frontend, and [Transposit](https://www.transposit.com/) as the backend.
 
+If you'd like, skip the tutorial and view the finished code [here](https://github.com/transposit/hello_react).
+
 > If you're new to Transposit, browse [its quickstart](https://www.transposit.com/docs/get-started/quickstart/). This React tutorial will assume basic familiarity with Transposit.
 
 # Set up Transposit
@@ -12,7 +14,7 @@ Build a web app using [React](https://reactjs.org/) and [Netlify](https://www.ne
 
 ## Create a new app
 
-Create a new app and give it a name, such as `hello_react`.
+[Create a new app](https://console.transposit.com/apps/new) and give it a name, such as `hello_react`.
 
 [Add an operation](https://www.transposit.com/docs/building/operations/) and commit it.
 
@@ -41,7 +43,7 @@ git clone https://console.transposit.com/git/jplace/hello_react
 
 # Set up React
 
-[Install `create-react-app` locally](https://create-react-app.dev/).
+[Install `create-react-app` globally](https://create-react-app.dev/).
 
 ```bash
 npm install -g create-react-app
@@ -278,7 +280,7 @@ function Index({ history }) {
 }
 ```
 
-Your web app now offers sign-in and calls your backend. The code in its entirety can be viewed [here](./react-tutorial-code.js).
+Your web app now offers sign-in and calls your backend. The code in its entirety can be viewed [here](https://github.com/transposit/hello_react/blob/master/frontend/src/App.js).
 
 # Set up Netlify
 
