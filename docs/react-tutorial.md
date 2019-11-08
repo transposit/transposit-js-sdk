@@ -19,7 +19,7 @@ If you'd like, skip the tutorial and view the finished code [here](https://githu
 [Add an operation](https://www.transposit.com/docs/building/operations/) and commit it.
 
 ```javascript
-// "hello" operation
+// "hello" JavaScript operation
 (params) => {
   return {
     hello: "react"
@@ -116,7 +116,7 @@ function App() {
 export default App;
 ```
 
-Navigate to _http://localhost:3000/signin_ to test that your router is working.
+Restart `npm start`. Navigate to _http://localhost:3000/signin_ to test that your router is working.
 
 ## Configure sign-in
 
@@ -131,6 +131,7 @@ Instantiate the SDK with a reference to your app's URL. In Transposit, You can f
 ```javascript
 import { Transposit } from "transposit";
 
+// At the top of App.js
 const transposit = new Transposit(
   "https://hello-react-ngsln.transposit.io" // replace with your app's URL
 );
