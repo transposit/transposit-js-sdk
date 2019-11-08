@@ -2,9 +2,7 @@
 
 > You must expose app data endpoints before calling these methods.
 
-Write to and read from [user settings](https://www.transposit.com/docs/building/user-config/#user-settings-schema) on behalf of the signed-in user. These methods only work for apps using sign-in.
-
-User settings rely on a pre-configured schema. Use [stash](./stash.md) if you want a schemaless key-value store.
+Write to and read from [user settings](https://www.transposit.com/docs/building/user-config/#user-settings-schema) on behalf of the signed-in user. These methods only work for apps using sign-in. They rely on a pre-configured schema.
 
 ```javascript
 await transposit.userSetting.put("key-in-schema", "some-value");
