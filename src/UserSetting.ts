@@ -15,6 +15,7 @@
  */
 
 import { Transposit } from ".";
+import { AnyJson } from "./utils/json-types";
 
 export class UserSetting {
   private transposit: Transposit;
@@ -22,7 +23,7 @@ export class UserSetting {
     this.transposit = transposit;
   }
 
-  async get<T>(key: string): Promise<T> {
+  async get<T extends AnyJson>(key: string): Promise<T> {
     const queryParams = { keyName: key };
     return await this.transposit.makeCallJson<T>(
       "GET",
@@ -31,7 +32,7 @@ export class UserSetting {
     );
   }
 
-  async put(key: string, value: any): Promise<void> {
+  async put(key: string, value: AnyJson): Promise<void> {
     const queryParams = { keyName: key };
     await this.transposit.makeCall("POST", "/api/v1/user_setting/value", {
       queryParams,
