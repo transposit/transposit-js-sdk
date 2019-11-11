@@ -38,6 +38,8 @@ Transposit apps are backed by a Git repo. Clone your app's repo locally so you c
 Navigate to **Settings > App Info > Source code** and [perform a `git clone`](https://www.transposit.com/docs/references/repository/#cloning-your-repository).
 
 ```bash
+# your username is your username on Transposit
+# your password is the "Git access token" available on Transposit in user settings
 git clone https://console.transposit.com/git/jplace/hello_react
 ```
 
@@ -59,7 +61,7 @@ Navigate to your cloned app repo. Create a directory called _frontend/_ and init
 cd hello_react/
 mkdir frontend/
 cd frontend/
-npx create-react-app . # --typescript if you prefer typescript
+npx create-react-app .
 ```
 
 Test that your React app is now working.
