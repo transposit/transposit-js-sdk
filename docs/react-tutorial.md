@@ -163,7 +163,7 @@ function SignIn() {
 
 At the end of sign-in, Transposit will redirect back to your app. Your app needs to use the SDK to complete the sign-in process and initiate a session.
 
-To implement this step securely, Transposit must know where your app is running. In Tranposit, whitelist your app's _/handle-signin_ URL. Navigate to **Users > User Configuration > Registration and Login** and click **Advanced**. Add `http://localhost:3000/handle-signin` to **Successful sign-in URIs**. Save your changes.
+To implement this step securely, Transposit must know where your app is running. In Tranposit, whitelist your app's _/handle-signin_ URL. Navigate to **Users > User Configuration > Registration and Sign-in** and click **Advanced**. Add `http://localhost:3000/handle-signin` to **Successful sign-in URIs**. Save your changes.
 
 Use a React [effect hook](https://reactjs.org/docs/hooks-effect.html) to handle sign-in. After, use React Router's `history` to navigate to the index page. Your component will return `null`, meaning render nothing. This is fine since the page will almost immediately redirect after loading.
 
@@ -308,7 +308,7 @@ netlify deploy
 # Your "Publish directory" should be ./build
 ```
 
-To sign in to your app, you need to update the **Successful sign-in URIs** in Transposit. Navigate to **Users > User Configuration > Registration and Login** and click **Advanced**. Add `<live draft URL>/handle-signin` to **Successful sign-in URIs**. Save your changes.
+To sign in to your app, you need to update the **Successful sign-in URIs** in Transposit. Navigate to **Users > User Configuration > Registration and Sign-in** and click **Advanced**. Add `<live draft URL>/handle-signin` to **Successful sign-in URIs**. Save your changes.
 
 Try out your app on Netlify!
 
