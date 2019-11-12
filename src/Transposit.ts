@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
+import { OperationError, OperationResponse, UserSetting } from ".";
 import { EndRequestLog } from "./EndRequestLog";
 import { APIError } from "./errors/APIError";
 import { SDKError } from "./errors/SDKError";
-import { OperationError, OperationResponse } from "./Operation";
 import { popCodeVerifier, pushCodeVerifier } from "./signin/pkce-helper";
 import {
   clearPersistedData,
@@ -134,6 +134,10 @@ export class Transposit {
         redirectUri || window.location.href,
       )}`,
     );
+  }
+
+  get userSetting() {
+    return new UserSetting(this);
   }
 
   async loadUser(): Promise<User> {

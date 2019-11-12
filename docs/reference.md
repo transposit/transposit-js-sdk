@@ -19,3 +19,7 @@ The reference documentation outlines each method of the SDK in detail. If you're
 ## Manage authentication
 
 * [Navigate to user settings page](methods/settings-uri.md)
+
+## App data endpoints
+
+* [Manage user settings](methods/user-setting.md)

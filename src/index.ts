@@ -16,4 +16,5 @@
 
 export * from "./Operation";
 export * from "./Transposit";
+export * from "./UserSetting";
 export { User } from "./signin/user";
