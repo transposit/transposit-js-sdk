@@ -28,6 +28,8 @@
     "jest": "JEST_JUNIT_OUTPUT=\"./target/surefire-reports/client-sdk-test-results.xml\" jest",
     "jest:ci": "yarn run jest --ci --runInBand",
     "jest:watch": "yarn run jest --watch",
+    "jest:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
+    "jest:inspect": "node inspect node_modules/.bin/jest --runInBand",
     "prettier:check": "prettier --list-different 'src/**/*.ts'",
     "prettier:fix": "prettier 'src/**/*.ts' --write",
     "tslint": "tslint -p tsconfig.json",
