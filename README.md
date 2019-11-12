@@ -129,6 +129,10 @@ Allow users to grant access to their third-party data. Use the SDK to link users
 
 ## FAQs
 
+### How do I use the SDK with React?
+
+See our [React tutorial](docs/react-tutorial.md).
+
 ### I'm an SDK power user. Can you tell me more?
 
 Absolutely! See the Transposit [reference documentation](docs/reference.md).
