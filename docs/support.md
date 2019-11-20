@@ -18,6 +18,6 @@ The SDK supports the following browsers on these platforms:
 * Safari
 * Edge
 
-## HTTP vs HTTPS
+## HTTPS vs HTTP
 
-The SDK only supports HTTPS in production. The SDK support HTTP only when running on `localhost`.
+The SDK only supports HTTPS in production. The SDK supports HTTP only when running on `localhost`.
